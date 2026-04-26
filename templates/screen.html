@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}📈 Stock Screener{% endblock %}
+
+{% block content %}
+<h1>📈 Stock Screener</h1>
+<p class="subtitle">미국 주식 자동 스크리닝 — 기술적 체크리스트 7개 기반 S/A/B 등급 분류</p>
+
+<div class="screen-form">
+  <form id="screen-form">
+    <div class="form-row">
+
+      <div class="form-group" style="flex:2">
+        <label>종목 입력 (비우면 Finviz 전체 스캔)</label>
+        <select id="ticker-select" multiple placeholder="예: AAPL MSFT NVDA"></select>
+      </div>
+
+      <div class="form-group">
+        <label>등급 필터</label>
+        <select id="grade-filter">
+          <option value="">전체</option>
+          <option value="S">S급만</option>
+          <option value="A">A급만</option>
+          <option value="B">B급만</option>
+        </select>
+      </div>
+
+      <button type="submit" id="submit-btn">스크리닝 시작</button>
+    </div>
+  </form>
+</div>
+
+<div id="result-area">
+  <p style="color:#4a5568; text-align:center; padding:2rem;">
+    종목을 입력하거나 Finviz 전체 스캔을 실행하세요.
+  </p>
+</div>
+
+<script>
+  const tickerSelect = new TomSelect('#ticker-select', {
+    valueField: 'symbol',
+    labelField: 'symbol',
+    searchField: ['symbol', 'name'],
+    maxItems: 20,
+    create: true,
+    createOnBlur: false,
+    persist: false,
+    placeholder: '예: AAPL MSFT NVDA',
+    load(query, callback) {
+      if (!query.length) return callback();
+      fetch(`/api/tickers?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(data => callback(data))
+        .catch(() => callback());
+    },
+    render: {
+      option: (d, escape) =>
+        `<div>
+          <strong>${escape(d.symbol)}</strong>
+          <span class="ts-name">${escape(d.name || '')}</span>
+        </div>`,
+      item: (d, escape) => `<div>${escape(d.symbol)}</div>`,
+    },
+  });
+
+  document.getElementById('screen-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const values = tickerSelect.getValue();
+    const tickers = (Array.isArray(values) ? values : [values]).filter(Boolean).join(',');
+    const gradeFilter = document.getElementById('grade-filter').value;
+
+    const resultArea = document.getElementById('result-area');
+    const submitBtn = document.getElementById('submit-btn');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '분석 중...';
+    resultArea.innerHTML = '<div class="polling"><p class="status-text">⏳ 스크리닝 시작...</p></div>';
+
+    const params = new URLSearchParams();
+    if (tickers) params.set('tickers', tickers);
+    if (gradeFilter) params.set('grade_filter', gradeFilter);
+
+    const evtSource = new EventSource(`/stream/screen?${params}`);
+
+    function finish() {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '스크리닝 시작';
+    }
+
+    evtSource.addEventListener('progress', function (e) {
+      const data = JSON.parse(e.data);
+      resultArea.innerHTML = `<div class="polling"><p class="status-text">⏳ ${data.stage}</p></div>`;
+    });
+
+    evtSource.addEventListener('done', function (e) {
+      evtSource.close();
+      finish();
+      const data = JSON.parse(e.data);
+      resultArea.innerHTML = data.html;
+      // TradingView 위젯 스크립트 재실행
+      resultArea.querySelectorAll('script').forEach(function (oldScript) {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach(attr =>
+          newScript.setAttribute(attr.name, attr.value)
+        );
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
+    });
+
+    evtSource.addEventListener('error', function (e) {
+      evtSource.close();
+      finish();
+      try {
+        const data = JSON.parse(e.data);
+        resultArea.innerHTML = `<div class="error-box"><p>❌ 오류: ${data.message}</p></div>`;
+      } catch {
+        resultArea.innerHTML = '<div class="error-box"><p>❌ 알 수 없는 오류가 발생했습니다.</p></div>';
+      }
+    });
+
+    evtSource.onerror = function () {
+      if (!evtSource.CLOSED) return;
+      finish();
+      if (resultArea.querySelector('.polling')) {
+        resultArea.innerHTML = '<div class="error-box"><p>❌ 서버 연결이 끊겼습니다.</p></div>';
+      }
+    };
+  });
+</script>
+{% endblock %}
