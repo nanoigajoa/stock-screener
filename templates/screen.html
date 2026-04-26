@@ -1,10 +1,40 @@
 {% extends "base.html" %}
 
-{% block title %}📈 Stock Screener{% endblock %}
+{% block title %}Stock Screener — 지금 진입할 종목을 찾아드립니다{% endblock %}
 
 {% block content %}
-<h1>📈 Stock Screener</h1>
-<p class="subtitle">미국 주식 자동 스크리닝 — 기술적 체크리스트 7개 기반 S/A/B 등급 분류</p>
+<h1>US Stock Screener</h1>
+<p class="subtitle">7가지 기술적 지표로 걸러낸 종목만 보여드립니다 — 감이 아닌 데이터로</p>
+
+<div class="intro-card">
+  <div class="intro-grid">
+    <div class="intro-section">
+      <p class="intro-label">무엇을 분석하나요</p>
+      <p class="intro-text">
+        미국 상장 종목 중 <strong>이동평균 정배열 · RSI · MACD · 볼린저밴드 · 거래량 · 지지선 반등 · 추세 지속성</strong>
+        7가지 체크리스트를 모두 통과한 종목만 추립니다.
+        Finviz 사전 필터(거래량 200만↑, 주가 $10↑, 200일선 위)를 먼저 통과한 종목에만 적용합니다.
+      </p>
+    </div>
+    <div class="intro-section">
+      <p class="intro-label">등급이 의미하는 것</p>
+      <div class="grade-legend">
+        <div class="legend-item"><span class="dot dot-s"></span><strong>S급</strong> — 7개 중 6개 이상 충족. 즉시 진입 검토 구간</div>
+        <div class="legend-item"><span class="dot dot-a"></span><strong>A급</strong> — 4~5개 충족. 분할 매수 고려 가능</div>
+        <div class="legend-item"><span class="dot dot-b"></span><strong>B급</strong> — 2~3개 충족. 신호 추가 확인 후 대기</div>
+        <div class="legend-item"><span class="dot dot-skip"></span><strong>SKIP</strong> — 급등·급락·RSI 과열 등 진입 부적합</div>
+      </div>
+    </div>
+    <div class="intro-section">
+      <p class="intro-label">투자자에게 무엇이 다른가요</p>
+      <p class="intro-text">
+        매수 후 <strong>+8% 1차 목표 / +15% 2차 목표</strong>, 손절은 <strong>-15%</strong>로 고정합니다.
+        기대 수익이 리스크의 2배 이상인 종목만 진입 신호로 간주합니다.
+        뉴스 리스크가 감지된 종목은 자동으로 SKIP 처리됩니다.
+      </p>
+    </div>
+  </div>
+</div>
 
 <div class="screen-form">
   <form id="screen-form">

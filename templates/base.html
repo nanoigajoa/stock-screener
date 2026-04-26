@@ -158,6 +158,52 @@
     .targets span:nth-child(2) { color: #63b3ed; }
     .targets span:last-child  { color: #fc8181; }
 
+    /* 소개 카드 */
+    .intro-card {
+      background: #1a1d27;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+    }
+    .intro-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+    .intro-section { display: flex; flex-direction: column; gap: 0.5rem; }
+    .intro-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #63b3ed;
+    }
+    .intro-text {
+      font-size: 0.85rem;
+      color: #a0aec0;
+      line-height: 1.65;
+    }
+    .intro-text strong { color: #e2e8f0; }
+    .grade-legend { display: flex; flex-direction: column; gap: 0.45rem; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.83rem;
+      color: #a0aec0;
+    }
+    .legend-item strong { color: #e2e8f0; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-s    { background: #48bb78; }
+    .dot-a    { background: #ecc94b; }
+    .dot-b    { background: #63b3ed; }
+    .dot-skip { background: #fc8181; }
+
     /* Tom Select 다크 테마 */
     .ts-wrapper { flex: 2; min-width: 180px; }
     .ts-control {
