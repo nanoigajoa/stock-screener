@@ -15,6 +15,6 @@ python-dotenv>=1.0.0
 
 # 외부 데이터소스
 pytrends>=4.9.0
-fredapi>=3.1.0
 quiverquant>=0.1.0
 sec-edgar-downloader>=0.18.0
+# fredapi 제거 — macro_fetcher.py가 requests로 FRED REST API 직접 호출
