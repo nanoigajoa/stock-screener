@@ -1,8 +1,9 @@
 import asyncio
 import logging
+import os
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -78,3 +79,35 @@ async def about(request: Request):
     return templates.TemplateResponse(
         request=request, name="about.html", context={"active_page": "about"}
     )
+
+
+def _verify_refresh_token(x_refresh_token: str | None) -> None:
+    secret = os.getenv("REFRESH_TOKEN", "")
+    if not secret or x_refresh_token != secret:
+        raise HTTPException(status_code=403, detail="Invalid refresh token")
+
+
+@app.get("/api/refresh/macro")
+async def refresh_macro(x_refresh_token: str | None = Header(default=None)):
+    _verify_refresh_token(x_refresh_token)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _do_macro_refresh)
+    return JSONResponse({"status": "ok", "refreshed": "macro"})
+
+
+@app.get("/api/refresh/fear-greed")
+async def refresh_fear_greed(x_refresh_token: str | None = Header(default=None)):
+    _verify_refresh_token(x_refresh_token)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _do_fear_greed_refresh)
+    return JSONResponse({"status": "ok", "refreshed": "fear_greed"})
+
+
+def _do_macro_refresh():
+    from screener.macro_fetcher import refresh_macro
+    refresh_macro()
+
+
+def _do_fear_greed_refresh():
+    from screener.fear_greed_fetcher import get_fear_greed
+    get_fear_greed()
