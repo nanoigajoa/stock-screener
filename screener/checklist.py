@@ -3,19 +3,30 @@ from config import (
     MIN_VOLUME_ABSOLUTE, MIN_RELATIVE_VOLUME,
 )
 
+_ALL_CHECKS = ["ma_alignment", "rsi", "volume", "macd", "support", "bollinger", "trend"]
+_WEIGHTS = {"ma_alignment": 2, "rsi": 2, "volume": 1, "macd": 1, "support": 1, "bollinger": 1, "trend": 1}
 
-def score_ticker(ind: dict) -> dict:
+
+def score_ticker(
+    ind: dict,
+    rsi_min: int = RSI_IDEAL_MIN,
+    rsi_max: int = RSI_IDEAL_MAX,
+    enabled_checks: list[str] | None = None,
+) -> dict:
     """
     7개 체크리스트 채점.
-    Returns: {items: {name: {pass, label, detail}}, total_score, hard_skip}
+    Returns: {items, total_score, max_score, hard_skip}
     """
+    enabled = set(enabled_checks) if enabled_checks else set(_ALL_CHECKS)
     rsi = ind["rsi"]
 
     # RSI 하드게이트 — 나머지 채점 불필요
     if rsi >= RSI_HARD_GATE:
+        max_score = sum(_WEIGHTS[k] for k in _ALL_CHECKS if k in enabled)
         return {
             "items": {},
             "total_score": 0,
+            "max_score": max_score,
             "hard_skip": True,
             "hard_skip_reason": f"RSI {rsi:.1f} ≥ {RSI_HARD_GATE} (과매수)",
         }
@@ -45,10 +56,10 @@ def score_ticker(ind: dict) -> dict:
     }
 
     # 2. RSI (weight 2)
-    rsi_ok = RSI_IDEAL_MIN <= rsi <= RSI_IDEAL_MAX
+    rsi_ok = rsi_min <= rsi <= rsi_max
     if rsi_ok:
-        rsi_detail = f"RSI {rsi:.1f} (이상적 구간 {RSI_IDEAL_MIN}~{RSI_IDEAL_MAX})"
-    elif rsi < RSI_IDEAL_MIN:
+        rsi_detail = f"RSI {rsi:.1f} (이상적 구간 {rsi_min}~{rsi_max})"
+    elif rsi < rsi_min:
         rsi_detail = f"RSI {rsi:.1f} (과매도 구간)"
     else:
         rsi_detail = f"RSI {rsi:.1f} (주의 구간)"
@@ -120,7 +131,11 @@ def score_ticker(ind: dict) -> dict:
         "detail": "Higher High + Higher Low 구조" if trend_ok else "추세 미확인",
     }
 
-    # score 필드 기반으로 합산 (MA 부분점수 반영)
-    total_score = sum(v["score"] for v in items.values())
+    # enabled_checks 필터 적용 — 비활성 항목 제거
+    if enabled_checks:
+        items = {k: v for k, v in items.items() if k in enabled}
 
-    return {"items": items, "total_score": total_score, "hard_skip": False}
+    total_score = sum(v["score"] for v in items.values())
+    max_score = sum(_WEIGHTS[k] for k in _ALL_CHECKS if k in enabled)
+
+    return {"items": items, "total_score": total_score, "max_score": max_score, "hard_skip": False}

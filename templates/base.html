@@ -3,245 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Stock Screener{% endblock %}</title>
+  <title>{% block title %}StockScope{% endblock %}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f1117;
-      color: #e2e8f0;
-      min-height: 100vh;
-      padding: 2rem 1rem;
-    }
-
-    .container { max-width: 900px; margin: 0 auto; }
-
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #63b3ed;
-      margin-bottom: 0.25rem;
-    }
-    .subtitle { color: #718096; font-size: 0.9rem; margin-bottom: 2rem; }
-
-    .screen-form {
-      background: #1a1d27;
-      border: 1px solid #2d3748;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
-
-    .form-group { display: flex; flex-direction: column; gap: 0.4rem; flex: 1; min-width: 180px; }
-    .form-group label { font-size: 0.8rem; color: #a0aec0; font-weight: 500; }
-
-    input[type="text"], select {
-      background: #2d3748;
-      border: 1px solid #4a5568;
-      border-radius: 8px;
-      color: #e2e8f0;
-      padding: 0.6rem 0.9rem;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input[type="text"]:focus, select:focus { border-color: #63b3ed; }
-    select option { background: #2d3748; }
-
-    button[type="submit"] {
-      background: #3182ce;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 0.65rem 1.5rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    button[type="submit"]:hover { background: #2b6cb0; }
-    button[type="submit"]:disabled { opacity: 0.7; cursor: not-allowed; }
-
-    .polling { text-align: center; padding: 2rem; color: #a0aec0; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-    .error-box {
-      background: #2d1515;
-      border: 1px solid #c53030;
-      border-radius: 8px;
-      padding: 1rem 1.5rem;
-      color: #fc8181;
-    }
-    .result-empty { text-align: center; color: #718096; padding: 3rem; }
-
-    .summary {
-      color: #a0aec0;
-      font-size: 0.85rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .stock-card {
-      background: #1a1d27;
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1rem;
-      border-left: 4px solid #4a5568;
-    }
-    .grade-s { border-left-color: #48bb78; }
-    .grade-a { border-left-color: #ecc94b; }
-    .grade-b { border-left-color: #63b3ed; }
-    .grade-skip { border-left-color: #fc8181; opacity: 0.65; }
-
-    .card-body {
-      display: flex;
-      gap: 1rem;
-      align-items: flex-start;
-    }
-    .card-info { flex: 1; min-width: 0; }
-    .tv-widget {
-      flex-shrink: 0;
-      width: 280px;
-      height: 130px;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    .ticker { font-size: 1.2rem; font-weight: 700; color: #e2e8f0; }
-    .price  { font-size: 1rem; color: #a0aec0; }
-
-    .grade-badge {
-      margin-left: auto;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      background: #2d3748;
-    }
-    .grade-s .grade-badge { color: #48bb78; }
-    .grade-a .grade-badge { color: #ecc94b; }
-    .grade-b .grade-badge { color: #63b3ed; }
-    .grade-skip .grade-badge { color: #fc8181; }
-
-    .skip-reason { font-size: 0.85rem; color: #fc8181; margin-bottom: 0.75rem; }
-
-    .checklist {
-      list-style: none;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 0.3rem 1rem;
-      font-size: 0.82rem;
-      color: #a0aec0;
-      margin-bottom: 0.75rem;
-    }
-
-    .targets {
-      display: flex;
-      gap: 1.5rem;
-      font-size: 0.83rem;
-      color: #718096;
-      border-top: 1px solid #2d3748;
-      padding-top: 0.75rem;
-      margin-top: 0.5rem;
-    }
-    .targets span:first-child { color: #48bb78; }
-    .targets span:nth-child(2) { color: #63b3ed; }
-    .targets span:last-child  { color: #fc8181; }
-
-    /* 소개 카드 */
-    .intro-card {
-      background: #1a1d27;
-      border: 1px solid #2d3748;
-      border-radius: 12px;
-      padding: 1.75rem;
-      margin-bottom: 2rem;
-    }
-    .intro-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
-    }
-    .intro-section { display: flex; flex-direction: column; gap: 0.5rem; }
-    .intro-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #63b3ed;
-    }
-    .intro-text {
-      font-size: 0.85rem;
-      color: #a0aec0;
-      line-height: 1.65;
-    }
-    .intro-text strong { color: #e2e8f0; }
-    .grade-legend { display: flex; flex-direction: column; gap: 0.45rem; }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.83rem;
-      color: #a0aec0;
-    }
-    .legend-item strong { color: #e2e8f0; }
-    .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .dot-s    { background: #48bb78; }
-    .dot-a    { background: #ecc94b; }
-    .dot-b    { background: #63b3ed; }
-    .dot-skip { background: #fc8181; }
-
-    /* Tom Select 다크 테마 */
-    .ts-wrapper { flex: 2; min-width: 180px; }
-    .ts-control {
-      background: #2d3748 !important;
-      border: 1px solid #4a5568 !important;
-      border-radius: 8px !important;
-      color: #e2e8f0 !important;
-      padding: 0.35rem 0.6rem !important;
-      min-height: 38px !important;
-      box-shadow: none !important;
-    }
-    .ts-control:focus-within { border-color: #63b3ed !important; }
-    .ts-control input { color: #e2e8f0 !important; }
-    .ts-control input::placeholder { color: #718096 !important; }
-    .ts-dropdown {
-      background: #1a1d27 !important;
-      border: 1px solid #4a5568 !important;
-      border-radius: 8px !important;
-      color: #e2e8f0 !important;
-    }
-    .ts-dropdown .option { padding: 0.5rem 0.9rem !important; }
-    .ts-dropdown .option:hover,
-    .ts-dropdown .option.active { background: #2d3748 !important; }
-    .ts-dropdown .ts-name { color: #718096; font-size: 0.8rem; margin-left: 0.5rem; }
-    .ts-control .item {
-      background: #3182ce !important;
-      color: white !important;
-      border-radius: 4px !important;
-      border: none !important;
-      padding: 1px 6px !important;
-      font-size: 0.85rem !important;
-    }
-    .ts-control .item .remove { color: rgba(255,255,255,0.7) !important; }
-  </style>
+  <link rel="stylesheet" href="/static/css/base.css">
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
+
+  <nav class="navbar">
+    <a class="nav-logo" href="/">
+      <span class="nav-logo-icon">📈</span> StockScope
+    </a>
+    <div class="nav-links">
+      <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">About</a>
+      <a href="/screen" class="nav-link nav-cta {% if active_page == 'screen' %}active{% endif %}">Screening</a>
+    </div>
+  </nav>
+
   <div class="container">
     {% block content %}{% endblock %}
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

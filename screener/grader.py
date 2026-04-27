@@ -1,7 +1,7 @@
 from config import TARGET_1_PCT, TARGET_2_PCT, STOP_LOSS_PCT
 
-
-_GRADE_THRESHOLDS = [("S", 6), ("A", 4), ("B", 2)]
+# 비율 기반 임계값 — 6/9≈0.67, 4/9≈0.44, 2/9≈0.22 (기존 기준 그대로)
+_GRADE_RATIOS = [("S", 0.67), ("A", 0.44), ("B", 0.22)]
 
 
 def grade(score_result: dict, ticker: str, price: float) -> dict:
@@ -20,9 +20,11 @@ def grade(score_result: dict, ticker: str, price: float) -> dict:
         }
 
     score = score_result["total_score"]
+    max_score = score_result.get("max_score", 9)
+    ratio = score / max_score if max_score > 0 else 0
     assigned_grade = "SKIP"
-    for g, threshold in _GRADE_THRESHOLDS:
-        if score >= threshold:
+    for g, threshold in _GRADE_RATIOS:
+        if ratio >= threshold:
             assigned_grade = g
             break
 

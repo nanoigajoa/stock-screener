@@ -1,10 +1,45 @@
 {% extends "base.html" %}
 
-{% block title %}Stock Screener — 지금 진입할 종목을 찾아드립니다{% endblock %}
+{% block title %}스크리닝 — StockScope{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/screen.css">{% endblock %}
 
 {% block content %}
-<h1>US Stock Screener</h1>
-<p class="subtitle">7가지 기술적 지표로 걸러낸 종목만 보여드립니다 — 감이 아닌 데이터로</p>
+<div class="macro-banner">
+  <div class="macro-main">
+    {% if macro %}
+    📊 &nbsp;
+    기준금리 <strong>{{ macro.fed_funds }}%</strong> &nbsp;·&nbsp;
+    CPI <strong>{{ macro.cpi_yoy }}%</strong> &nbsp;·&nbsp;
+    실업률 <strong>{{ macro.unrate }}%</strong> &nbsp;·&nbsp;
+    장단기금리차 <strong>{{ macro.t10y2y }}%</strong> &nbsp;·&nbsp;
+    VIX <strong>{{ macro.vix if macro.vix else "N/A" }}</strong>
+    {% if macro.regime %}
+    &nbsp;|&nbsp; <span class="macro-regime">{{ macro.regime }}</span>
+    {% endif %}
+    {% else %}
+    📊 &nbsp; <span style="color:var(--text3)">매크로 데이터 로드 중...</span>
+    {% endif %}
+
+    {% if fear_greed and fear_greed.score is defined %}
+    &nbsp;&nbsp;
+    <span class="fg-badge fg-{{ 'fear' if fear_greed.score < 45 else ('neutral' if fear_greed.score < 56 else 'greed') }}">
+      공포탐욕 {{ fear_greed.score }} {{ fear_greed.label }}
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="macro-meta">
+    {% if macro and macro.fetched_at %}
+    <span title="{{ macro.note }}">FRED {{ macro.fetched_at | ago }}</span>
+    {% endif %}
+    {% if fear_greed and fear_greed.fetched_at is defined %}
+    &nbsp;·&nbsp;
+    <span>공포탐욕 {{ fear_greed.fetched_at | ago }}</span>
+    {% endif %}
+  </div>
+</div>
+<h1 class="page-title">US Stock Screener</h1>
+<p class="page-subtitle">7가지 기술적 지표로 걸러낸 종목만 보여드립니다 — 감이 아닌 데이터로</p>
 
 <div class="intro-card">
   <div class="intro-grid">
@@ -12,16 +47,16 @@
       <p class="intro-label">무엇을 분석하나요</p>
       <p class="intro-text">
         미국 상장 종목 중 <strong>이동평균 정배열 · RSI · MACD · 볼린저밴드 · 거래량 · 지지선 반등 · 추세 지속성</strong>
-        7가지 체크리스트를 모두 통과한 종목만 추립니다.
+        7가지 체크리스트를 통과한 종목만 추립니다.
         Finviz 사전 필터(거래량 200만↑, 주가 $10↑, 200일선 위)를 먼저 통과한 종목에만 적용합니다.
       </p>
     </div>
     <div class="intro-section">
       <p class="intro-label">등급이 의미하는 것</p>
       <div class="grade-legend">
-        <div class="legend-item"><span class="dot dot-s"></span><strong>S급</strong> — 7개 중 6개 이상 충족. 즉시 진입 검토 구간</div>
-        <div class="legend-item"><span class="dot dot-a"></span><strong>A급</strong> — 4~5개 충족. 분할 매수 고려 가능</div>
-        <div class="legend-item"><span class="dot dot-b"></span><strong>B급</strong> — 2~3개 충족. 신호 추가 확인 후 대기</div>
+        <div class="legend-item"><span class="dot dot-s"></span><strong>S급</strong> — 7개 중 6개 이상 충족. 즉시 진입 검토</div>
+        <div class="legend-item"><span class="dot dot-a"></span><strong>A급</strong> — 4~5개 충족. 분할 매수 고려</div>
+        <div class="legend-item"><span class="dot dot-b"></span><strong>B급</strong> — 2~3개 충족. 추가 신호 확인 후 대기</div>
         <div class="legend-item"><span class="dot dot-skip"></span><strong>SKIP</strong> — 급등·급락·RSI 과열 등 진입 부적합</div>
       </div>
     </div>
@@ -55,7 +90,44 @@
         </select>
       </div>
 
+      <div class="form-group">
+        <label>데이터 기간</label>
+        <select id="period-select">
+          <option value="3mo">3개월</option>
+          <option value="6mo" selected>6개월</option>
+          <option value="1y">1년</option>
+        </select>
+      </div>
+
       <button type="submit" id="submit-btn">스크리닝 시작</button>
+    </div>
+
+    <div class="advanced-toggle" id="advanced-toggle" onclick="toggleAdvanced()">
+      ⚙️ 고급 설정 <span id="advanced-arrow">▼</span>
+    </div>
+    <div id="advanced-settings" style="display:none">
+      <div class="advanced-inner">
+        <div class="advanced-section">
+          <p class="advanced-label">RSI 범위</p>
+          <div class="rsi-row">
+            <input type="number" id="rsi-min" value="45" min="10" max="79" title="RSI 최소">
+            <span class="rsi-sep">~</span>
+            <input type="number" id="rsi-max" value="65" min="11" max="90" title="RSI 최대">
+          </div>
+        </div>
+        <div class="advanced-section">
+          <p class="advanced-label">체크리스트 항목</p>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" name="checks" value="ma_alignment" checked> 이동평균 정배열</label>
+            <label class="check-item"><input type="checkbox" name="checks" value="rsi" checked> RSI</label>
+            <label class="check-item"><input type="checkbox" name="checks" value="volume" checked> 거래량</label>
+            <label class="check-item"><input type="checkbox" name="checks" value="macd" checked> MACD</label>
+            <label class="check-item"><input type="checkbox" name="checks" value="support" checked> 지지/저항</label>
+            <label class="check-item"><input type="checkbox" name="checks" value="bollinger" checked> 볼린저밴드</label>
+            <label class="check-item"><input type="checkbox" name="checks" value="trend" checked> 추세 지속성</label>
+          </div>
+        </div>
+      </div>
     </div>
   </form>
 </div>
@@ -65,98 +137,6 @@
     종목을 입력하거나 Finviz 전체 스캔을 실행하세요.
   </p>
 </div>
-
-<script>
-  const tickerSelect = new TomSelect('#ticker-select', {
-    valueField: 'symbol',
-    labelField: 'symbol',
-    searchField: ['symbol', 'name'],
-    maxItems: 20,
-    create: true,
-    createOnBlur: false,
-    persist: false,
-    placeholder: '예: AAPL MSFT NVDA',
-    load(query, callback) {
-      if (!query.length) return callback();
-      fetch(`/api/tickers?q=${encodeURIComponent(query)}`)
-        .then(r => r.json())
-        .then(data => callback(data))
-        .catch(() => callback());
-    },
-    render: {
-      option: (d, escape) =>
-        `<div>
-          <strong>${escape(d.symbol)}</strong>
-          <span class="ts-name">${escape(d.name || '')}</span>
-        </div>`,
-      item: (d, escape) => `<div>${escape(d.symbol)}</div>`,
-    },
-  });
-
-  document.getElementById('screen-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const values = tickerSelect.getValue();
-    const tickers = (Array.isArray(values) ? values : [values]).filter(Boolean).join(',');
-    const gradeFilter = document.getElementById('grade-filter').value;
-
-    const resultArea = document.getElementById('result-area');
-    const submitBtn = document.getElementById('submit-btn');
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = '분석 중...';
-    resultArea.innerHTML = '<div class="polling"><p class="status-text">⏳ 스크리닝 시작...</p></div>';
-
-    const params = new URLSearchParams();
-    if (tickers) params.set('tickers', tickers);
-    if (gradeFilter) params.set('grade_filter', gradeFilter);
-
-    const evtSource = new EventSource(`/stream/screen?${params}`);
-
-    function finish() {
-      submitBtn.disabled = false;
-      submitBtn.textContent = '스크리닝 시작';
-    }
-
-    evtSource.addEventListener('progress', function (e) {
-      const data = JSON.parse(e.data);
-      resultArea.innerHTML = `<div class="polling"><p class="status-text">⏳ ${data.stage}</p></div>`;
-    });
-
-    evtSource.addEventListener('done', function (e) {
-      evtSource.close();
-      finish();
-      const data = JSON.parse(e.data);
-      resultArea.innerHTML = data.html;
-      // TradingView 위젯 스크립트 재실행
-      resultArea.querySelectorAll('script').forEach(function (oldScript) {
-        const newScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach(attr =>
-          newScript.setAttribute(attr.name, attr.value)
-        );
-        newScript.textContent = oldScript.textContent;
-        oldScript.parentNode.replaceChild(newScript, oldScript);
-      });
-    });
-
-    evtSource.addEventListener('error', function (e) {
-      evtSource.close();
-      finish();
-      try {
-        const data = JSON.parse(e.data);
-        resultArea.innerHTML = `<div class="error-box"><p>❌ 오류: ${data.message}</p></div>`;
-      } catch {
-        resultArea.innerHTML = '<div class="error-box"><p>❌ 알 수 없는 오류가 발생했습니다.</p></div>';
-      }
-    });
-
-    evtSource.onerror = function () {
-      if (!evtSource.CLOSED) return;
-      finish();
-      if (resultArea.querySelector('.polling')) {
-        resultArea.innerHTML = '<div class="error-box"><p>❌ 서버 연결이 끊겼습니다.</p></div>';
-      }
-    };
-  });
-</script>
 {% endblock %}
+
+{% block extra_js %}<script src="/static/js/screen.js"></script>{% endblock %}

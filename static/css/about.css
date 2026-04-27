@@ -1,0 +1,353 @@
+/* ── Hero ─────────────────────────────────────────── */
+.about-hero {
+  text-align: center;
+  padding: 3rem 1rem 2.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 3rem;
+}
+.about-hero h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+}
+.about-hero h1 span { color: var(--blue); }
+.about-hero p {
+  font-size: 1rem;
+  color: var(--text2);
+  max-width: 560px;
+  margin: 0 auto 1.75rem;
+  line-height: 1.7;
+}
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.hero-learn {
+  font-size: 0.9rem;
+  color: var(--text3);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.hero-learn:hover { color: var(--text2); }
+
+/* ── Section Common ───────────────────────────────── */
+.about-section { margin-bottom: 3.5rem; }
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--blue);
+  margin-bottom: 0.5rem;
+}
+.section-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+.section-desc {
+  font-size: 0.9rem;
+  color: var(--text2);
+  line-height: 1.65;
+  margin-bottom: 1.75rem;
+  max-width: 640px;
+}
+
+/* ── Card Hover (공통) ────────────────────────────── */
+.pipeline-step,
+.indicator-card,
+.grade-card,
+.badge-explain,
+.fg-simple,
+.cta-section {
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+}
+.pipeline-step:hover,
+.indicator-card:hover,
+.grade-card:hover,
+.badge-explain:hover,
+.fg-simple:hover,
+.cta-section:hover {
+  box-shadow: 0 10px 36px rgba(0,0,0,0.5);
+  transform: translateY(-3px);
+  border-color: var(--border2);
+}
+
+/* ── Pipeline ─────────────────────────────────────── */
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.pipeline-step {
+  flex: 1;
+  min-width: 140px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  position: relative;
+}
+.pipeline-step-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+.pipeline-step-icon { font-size: 1.6rem; margin-bottom: 0.5rem; }
+.pipeline-step-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+.pipeline-step-desc { font-size: 0.78rem; color: var(--text3); line-height: 1.5; }
+.pipeline-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--border2);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  align-self: center;
+}
+@media (max-width: 600px) {
+  .pipeline-arrow { display: none; }
+  .pipeline-step { min-width: 100%; }
+}
+
+/* ── Checklist Cards ──────────────────────────────── */
+.indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.indicator-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.indicator-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.indicator-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(99,179,237,0.15);
+  color: var(--blue);
+  border-radius: 6px;
+  padding: 0.15rem 0.45rem;
+  flex-shrink: 0;
+}
+.indicator-weight {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--text3);
+}
+.indicator-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.indicator-desc { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+.indicator-pass {
+  font-size: 0.78rem;
+  color: var(--green);
+  background: rgba(72,187,120,0.1);
+  border: 1px solid rgba(72,187,120,0.2);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  margin-top: 0.25rem;
+}
+
+/* ── Grade Table ──────────────────────────────────── */
+.grade-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.grade-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  border-top: 3px solid var(--border2);
+}
+.grade-card.gs { border-top-color: var(--green); }
+.grade-card.ga { border-top-color: var(--yellow); }
+.grade-card.gb { border-top-color: var(--blue); }
+.grade-card.gskip { border-top-color: var(--red); opacity: 0.8; }
+
+.grade-card-label {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+.gs .grade-card-label    { color: var(--green); }
+.ga .grade-card-label    { color: var(--yellow); }
+.gb .grade-card-label    { color: var(--blue); }
+.gskip .grade-card-label { color: var(--red); }
+
+.grade-card-score {
+  font-size: 0.78rem;
+  color: var(--text3);
+  margin-bottom: 0.6rem;
+}
+.grade-card-action {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.grade-card-desc { font-size: 0.8rem; color: var(--text2); line-height: 1.55; }
+
+/* ── Badge Section ────────────────────────────────── */
+.badge-explain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.badge-explain {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.badge-explain-top { display: flex; align-items: center; gap: 0.75rem; }
+.badge-explain-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+.badge-explain-desc { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+.badge-explain-source { font-size: 0.75rem; color: var(--text3); }
+
+/* ── Strategy ─────────────────────────────────────── */
+.strategy-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+}
+.strategy-item { display: flex; flex-direction: column; gap: 0.3rem; }
+.strategy-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sv-green { color: var(--green); }
+.sv-blue  { color: var(--blue); }
+.sv-red   { color: var(--red); }
+.strategy-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+.strategy-desc  { font-size: 0.78rem; color: var(--text3); line-height: 1.5; }
+
+/* ── CTA ──────────────────────────────────────────── */
+.cta-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2.5rem 2rem;
+}
+.cta-section .section-desc { margin-bottom: 1.5rem; }
+.cta-btn {
+  display: inline-block;
+  background: var(--blue-btn);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.7rem 2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+}
+.cta-btn:hover {
+  background: var(--blue-hover);
+  transform: translateY(-1px);
+}
+@media (max-width: 480px) {
+  .cta-section { padding: 1.75rem 1.25rem; }
+  .cta-title { font-size: 1.15rem; }
+  .cta-btn { font-size: 0.88rem; padding: 0.65rem 1.5rem; }
+}
+
+/* ── Fear & Greed ─────────────────────────────────── */
+.fg-simple {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.fg-simple-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.fg-simple-row:last-of-type { border-bottom: none; }
+.fg-simple-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  min-width: 130px;
+}
+.fg-simple-weight {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--blue);
+  background: rgba(99,179,237,0.1);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  white-space: nowrap;
+}
+.fg-simple-desc {
+  font-size: 0.8rem;
+  color: var(--text3);
+}
+.fg-simple-desc code {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.77rem;
+  color: var(--blue);
+}
+.fg-simple-note {
+  font-size: 0.78rem;
+  color: var(--text3);
+  padding-top: 0.25rem;
+}
+
+/* ── Data Notice ──────────────────────────────────── */
+.data-notice {
+  background: rgba(99,179,237,0.05);
+  border: 1px solid rgba(99,179,237,0.2);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  font-size: 0.82rem;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.data-notice strong { color: var(--blue); }

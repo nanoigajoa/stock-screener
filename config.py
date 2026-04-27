@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ================================
 # Finviz 필터 설정
@@ -47,6 +50,11 @@ SCHEDULE_TIME = "08:00"
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 KAKAO_ACCESS_TOKEN = os.getenv("KAKAO_ACCESS_TOKEN", "")
+
+# ================================
+# 외부 데이터소스 API 키
+# ================================
+FRED_API_KEY        = os.getenv("FRED_API_KEY", "")         # fred.stlouisfed.org 무료
 KAKAO_ALERT_GRADES = ["S"]
 
 # ================================

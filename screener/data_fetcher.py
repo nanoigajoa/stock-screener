@@ -4,34 +4,35 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 from datetime import date
 from config import DATA_PERIOD, DATA_INTERVAL
 
-_cache: dict[str, tuple[date, pd.DataFrame]] = {}
+_cache: dict[tuple[str, str], tuple[date, pd.DataFrame]] = {}
 
 
-def fetch_ohlcv(tickers: list[str]) -> dict[str, pd.DataFrame]:
-    """티커 리스트의 OHLCV 데이터 수집. 당일 캐싱 적용."""
+def fetch_ohlcv(tickers: list[str], period: str = DATA_PERIOD) -> dict[str, pd.DataFrame]:
+    """티커 리스트의 OHLCV 데이터 수집. 당일 캐싱 적용 (기간별 별도 캐시)."""
     today = date.today()
     result: dict[str, pd.DataFrame] = {}
     to_fetch = []
 
     for t in tickers:
-        if t in _cache and _cache[t][0] == today:
-            result[t] = _cache[t][1]
+        cache_key = (t, period)
+        if cache_key in _cache and _cache[cache_key][0] == today:
+            result[t] = _cache[cache_key][1]
         else:
             to_fetch.append(t)
 
     if not to_fetch:
         return result
 
-    print(f"[Fetcher] {len(to_fetch)}개 종목 데이터 수집 중...")
+    print(f"[Fetcher] {len(to_fetch)}개 종목 데이터 수집 중... (기간: {period})")
     try:
         raw = yf.download(
             to_fetch,
-            period=DATA_PERIOD,
+            period=period,
             interval=DATA_INTERVAL,
             group_by="ticker",
             auto_adjust=True,
             progress=False,
-            threads=False,   # Celery 워커 내 pickle 충돌 방지
+            threads=False,
         )
     except Exception as e:
         print(f"[Fetcher] 수집 실패: {e}")
@@ -49,7 +50,7 @@ def fetch_ohlcv(tickers: list[str]) -> dict[str, pd.DataFrame]:
                 print(f"[Fetcher] {ticker}: 데이터 부족 ({len(df)}일) → skip")
                 continue
 
-            _cache[ticker] = (today, df)
+            _cache[(ticker, period)] = (today, df)
             result[ticker] = df
         except Exception:
             print(f"[Fetcher] {ticker}: 파싱 실패 → skip")
