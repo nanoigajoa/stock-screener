@@ -276,6 +276,46 @@ mom_score = max(0, min(100, (pct + 10) / 20 * 100))
 
 ---
 
+## [2026-04-28] GitHub Actions 배치 자동화 + 빌드 오류 수정
+
+### 1. GitHub Actions 워크플로우 2개 추가
+
+**배경:** Render 무료 플랜은 비활성 15분 후 슬립. 서버 내 데몬 스레드(24h)도 슬립 시 소멸.
+외부 cron으로 keepalive + 일일 배치를 보장해야 함.
+
+| 파일 | 역할 |
+|------|------|
+| `.github/workflows/keepalive.yml` | 평일 장 시간대 10분, 그 외 14분 간격 `/health` ping |
+| `.github/workflows/daily-batch.yml` | 매일 KST 07:00 서버 웨이크업 후 매크로·공포탐욕 강제 갱신 |
+
+### 2. 갱신 전용 API 엔드포인트 추가 (`api/main.py`)
+
+GitHub Actions가 Render 서버의 캐시를 강제 갱신할 수 있도록 보호된 엔드포인트 추가.
+
+| 경로 | 역할 |
+|------|------|
+| `GET /api/refresh/macro` | FRED 매크로 데이터 강제 갱신 |
+| `GET /api/refresh/fear-greed` | 공포탐욕지수 강제 갱신 |
+
+`X-Refresh-Token` 헤더 검증 — GitHub Secret `REFRESH_TOKEN` 과 Render 환경변수 `REFRESH_TOKEN` 일치해야 허용.
+
+**필요한 설정:**
+- GitHub → Repository secrets: `RENDER_URL`, `REFRESH_TOKEN`
+- Render → Environment Variables: `REFRESH_TOKEN`, `FRED_API_KEY`
+
+### 3. `fredapi>=3.1.0` 제거 → Render 빌드 오류 해결
+
+**원인:** `fredapi` 최신 버전은 `0.5.2`인데 `>=3.1.0` 명시 → 패키지 없음 → 빌드 실패.
+
+**사실:** `macro_fetcher.py`는 이미 `fredapi`를 쓰지 않고 `requests`로 FRED REST API를 직접 호출 중. 의존성 자체가 불필요했음.
+
+```diff
+- fredapi>=3.1.0
++ # fredapi 제거 — macro_fetcher.py가 requests로 FRED REST API 직접 호출
+```
+
+---
+
 ## 미구현 / 계획 중
 
 → 상세 내용: [docs/phases/phase-future.md](phases/phase-future.md)
