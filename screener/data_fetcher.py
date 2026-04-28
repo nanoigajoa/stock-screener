@@ -5,6 +5,7 @@ from datetime import date
 from config import DATA_PERIOD, DATA_INTERVAL
 
 _cache: dict[tuple[str, str], tuple[date, pd.DataFrame]] = {}
+_intraday_cache: dict[tuple[str, date, str], pd.DataFrame] = {}
 
 
 def fetch_ohlcv(tickers: list[str], period: str = DATA_PERIOD) -> dict[str, pd.DataFrame]:
@@ -57,6 +58,30 @@ def fetch_ohlcv(tickers: list[str], period: str = DATA_PERIOD) -> dict[str, pd.D
 
     print(f"[Fetcher] 수집 완료: {len(result)}/{len(to_fetch)}개")
     return result
+
+
+def fetch_intraday(ticker: str, interval: str, period: str) -> pd.DataFrame | None:
+    """
+    단일 티커 분봉 데이터 수집. 당일 캐싱 (interval별 독립 캐시).
+    실패 시 None 반환 — 호출자가 None 처리 필수.
+
+    캐시 키: (ticker, date, interval) — 기존 _cache의 (ticker, period)와 충돌 없음.
+    """
+    key = (ticker, date.today(), interval)
+    if key in _intraday_cache:
+        return _intraday_cache[key]
+    try:
+        df = yf.Ticker(ticker).history(
+            interval=interval, period=period, auto_adjust=True
+        )
+        if df.index.tzinfo is not None:
+            df.index = df.index.tz_localize(None)
+        if len(df) < 10:
+            return None
+        _intraday_cache[key] = df
+        return df
+    except Exception:
+        return None
 
 
 def _fetch_change(ticker: str) -> float:
