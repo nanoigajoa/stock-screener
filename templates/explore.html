@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Explore — StockScope{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/explore.css?v=9">{% endblock %}
+
+{% block content %}
+<!-- Market Pulse Dashboard -->
+<div class="market-pulse">
+  <div class="pulse-card fg-index">
+    <span class="pulse-label">공포탐욕지수</span>
+    <div class="fg-display">
+      <span class="fg-score">{{ fg.score if fg else '–' }}</span>
+      <span class="fg-label">{{ fg.label if fg else '데이터 로딩 중...' }}</span>
+    </div>
+    <div class="pulse-meta">VIX {{ fg.vix if fg else '–' }}</div>
+  </div>
+
+  <div class="pulse-card macro-regime">
+    <span class="pulse-label">거시경제 국면</span>
+    <div class="regime-display">
+      <span class="regime-text">{{ macro.regime if macro else '안정' }}</span>
+    </div>
+    <div class="macro-stats">
+      <span>금리 {{ macro.fed_funds }}%</span>
+      <span>인플레 {{ macro.cpi_yoy }}%</span>
+    </div>
+  </div>
+</div>
+
+<div class="explore-hero">
+  <h1 class="hero-title">Market Explorer</h1>
+  <p class="hero-subtitle">데이터가 증명하고 시장이 선택한 기회를 찾으세요</p>
+  
+  <form id="explore-form" class="search-container">
+    <div class="search-box">
+      <select id="ticker-search" multiple placeholder="종목을 검색하세요 (예: TSLA, AAPL)..."></select>
+      <button type="submit" class="search-btn">🔍 분석</button>
+    </div>
+    <div class="search-suggestions">
+      <button type="button" class="suggest-btn" data-tickers="">🔥 오늘 최고의 기회 찾기 (Discovery)</button>
+    </div>
+  </form>
+</div>
+
+<!-- 결과 영역 -->
+<div id="explore-result-area">
+  <!-- 초기 화면: 가이드 -->
+  <div class="explore-guide">
+    <p>분석할 티커를 입력하거나 <b>[Discovery]</b> 버튼을 눌러 시장 전체를 탐색하세요.</p>
+  </div>
+</div>
+
+<!-- 통합 차트 모달 -->
+<div id="chart-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span id="modal-ticker" class="modal-ticker-name"></span>
+        <span id="modal-company" class="modal-company-name"></span>
+      </div>
+      <button id="modal-close" aria-label="닫기">✕</button>
+    </div>
+    <div id="lw-chart-container"></div>
+    <div id="modal-detail"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/explore.js?v=9"></script>
+{% endblock %}

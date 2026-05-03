@@ -1,36 +1,34 @@
 """
 SEC EDGAR Form 4 내부자 거래 조회 (sec-edgar-downloader).
 - yfinance insider_purchases 대체 (더 신뢰도 높음)
-- Lazy per-ticker, TTL 24h 메모리 캐시
+- Lazy per-ticker, TTL 24h 디스크 캐시 (persistent)
 - API 키 불필요 (SEC 공개 데이터)
 """
 import logging
-import os
 import re
 import tempfile
 from datetime import datetime, date, timedelta
 from pathlib import Path
+from screener.cache_manager import cache
 
 logger = logging.getLogger(__name__)
 
-_cache: dict[str, tuple[bool, datetime]] = {}
 _TTL = 86400  # 24h
 
 
 def _is_fresh(ticker: str) -> bool:
-    if ticker not in _cache:
-        return False
-    _, fetched_at = _cache[ticker]
-    return (datetime.now() - fetched_at).total_seconds() < _TTL
+    cache_key = f"insider_{ticker}"
+    return cache_key in cache
 
 
 def get_insider_buys(ticker: str, days: int = 90) -> bool:
     """최근 N일 내 내부자 매수 여부 반환."""
+    cache_key = f"insider_{ticker}"
     if _is_fresh(ticker):
-        return _cache[ticker][0]
+        return cache.get(cache_key)
 
     result = _fetch_form4(ticker, days)
-    _cache[ticker] = (result, datetime.now())
+    cache.set(cache_key, result, expire=_TTL)
     return result
 
 
@@ -50,7 +48,6 @@ def _fetch_form4(ticker: str, days: int) -> bool:
             form4_dir = Path(tmpdir) / "sec-edgar-filings" / ticker / "4"
 
             if not form4_dir.exists():
-                _cache[ticker] = (False, datetime.now())
                 return False
 
             for filing_dir in sorted(form4_dir.iterdir(), reverse=True):

@@ -1,30 +1,134 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="fusion">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}StockScope{% endblock %}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
-  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/base.css?v=3">
+  <link rel="stylesheet" href="/static/css/signals.css?v=3">
+  <link rel="stylesheet" href="/static/css/screen.css?v=3">
+  <link rel="stylesheet" href="/static/css/variants.css?v=3">
+  <link rel="stylesheet" href="/static/css/layouts.css?v=3">
+  <link rel="stylesheet" href="/static/css/sidebars.css?v=3">
+  <link rel="stylesheet" href="/static/css/shells.css?v=3">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body style="font-family: Inter; font-size: 14px">
 
-  <nav class="navbar">
-    <a class="nav-logo" href="/">
-      <span class="nav-logo-icon">📈</span> StockScope
-    </a>
-    <div class="nav-links">
-      <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">About</a>
-      <a href="/screen" class="nav-link nav-cta {% if active_page == 'screen' %}active{% endif %}">Screening</a>
-    </div>
-  </nav>
+  <div class="app-layout">
+    <!-- ── Sidebar ───────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <a href="/">
+          <span class="brand-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 11L4.5 6.5L7.5 9L13 2.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M9 2.5H13V6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span class="brand-name"><span class="accent">S</span>tockScope</span>
+        </a>
+      </div>
 
-  <div class="container">
-    {% block content %}{% endblock %}
+      <div class="sidebar-section-label">Workspace</div>
+      <nav class="sidebar-nav">
+        <a class="nav-item {% if active_page == 'signals' %}active{% endif %}" href="/signals" data-tooltip="Signals">
+          <span class="nav-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 11L4 7L7 9L13 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </span>
+          <span>Signals</span>
+          <span class="nav-kbd">⌘1</span>
+        </a>
+        <a class="nav-item {% if active_page == 'screen' %}active{% endif %}" href="/screen" data-tooltip="Screener">
+          <span class="nav-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.4" /><path d="M9.5 9.5L13 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+          </span>
+          <span>Screener</span>
+          <span class="nav-kbd">⌘2</span>
+        </a>
+        <a class="nav-item {% if active_page == 'explore' %}active{% endif %}" href="/explore" data-tooltip="Explore">
+          <span class="nav-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.4" /><path d="M2 5.5H12M5.5 2V12" stroke="currentColor" strokeWidth="1.4" /></svg>
+          </span>
+          <span>Explore</span>
+          <span class="nav-kbd">⌘3</span>
+        </a>
+        <a class="nav-item {% if active_page == 'about' %}active{% endif %}" href="/about" data-tooltip="About">
+          <span class="nav-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4" /><path d="M7 4V7L9 8.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+          </span>
+          <span>About</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="sidebar-section-label">Markets · Live</div>
+      <div class="macro-stack">
+        {% if macro %}
+        <div class="macro-stack-title">
+          <span>NYSE Open</span>
+          <span class="live-dot"></span>
+        </div>
+        <div class="macro-row">
+          <span class="macro-label">SPY</span>
+          <span>
+            <span class="macro-val">{{ macro.spy if macro.spy else "N/A" }}</span>
+            {% if macro.spy_delta %}
+            <span class="macro-delta {% if macro.spy_delta >= 0 %}up{% else %}down{% endif %}">
+              {{ "+" if macro.spy_delta >= 0 }}{{ macro.spy_delta }}%
+            </span>
+            {% endif %}
+          </span>
+        </div>
+        <div class="macro-row">
+          <span class="macro-label">VIX</span>
+          <span>
+            <span class="macro-val {% if macro.vix and macro.vix > 20 %}warn{% else %}up{% endif %}">{{ macro.vix if macro.vix else "N/A" }}</span>
+            {% if macro.vix_delta %}
+            <span class="macro-delta {% if macro.vix_delta >= 0 %}down{% else %}up{% endif %}">
+              {{ "+" if macro.vix_delta >= 0 }}{{ macro.vix_delta }}
+            </span>
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="fg-gauge">
+          <div class="fg-head">
+            <span>Fear &amp; Greed</span>
+            <strong>{{ macro.fear_greed if macro.fear_greed else "N/A" }} · {{ macro.fear_greed_label if macro.fear_greed_label else "" }}</strong>
+          </div>
+          <div class="fg-bar">
+            {% if macro.fear_greed %}
+            <div class="fg-marker" style="left: calc({{ macro.fear_greed }}% - 1px)"></div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="macro-stack-title">Loading...</div>
+        {% endif %}
+      </div>
+
+      <div class="sidebar-footer">
+        <span>v3.2.1</span>
+        <span>© 2026</span>
+      </div>
+    </aside>
+
+    <!-- ── Main Content ────────────────────────────────────────── -->
+    <main class="main-content">
+      <div class="container" {% block container_attrs %}{% endblock %}>
+        {% block content %}{% endblock %}
+      </div>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

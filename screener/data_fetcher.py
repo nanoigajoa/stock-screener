@@ -1,23 +1,32 @@
 import yfinance as yf
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from datetime import date
+from datetime import date, datetime, time as _time
+from zoneinfo import ZoneInfo
 from config import DATA_PERIOD, DATA_INTERVAL
+from screener.cache_manager import cache
 
-_cache: dict[tuple[str, str], tuple[date, pd.DataFrame]] = {}
-_intraday_cache: dict[tuple[str, date, str], pd.DataFrame] = {}
+_ET = ZoneInfo("America/New_York")
 
+
+def is_market_open() -> bool:
+    """NYSE 기준 장 중 여부 (9:30–16:00 ET, 월–금)."""
+    now = datetime.now(_ET)
+    return now.weekday() < 5 and _time(9, 30) <= now.time() < _time(16, 0)
 
 def fetch_ohlcv(tickers: list[str], period: str = DATA_PERIOD) -> dict[str, pd.DataFrame]:
     """티커 리스트의 OHLCV 데이터 수집. 당일 캐싱 적용 (기간별 별도 캐시)."""
-    today = date.today()
+    today_str = date.today().isoformat()
     result: dict[str, pd.DataFrame] = {}
     to_fetch = []
 
     for t in tickers:
-        cache_key = (t, period)
-        if cache_key in _cache and _cache[cache_key][0] == today:
-            result[t] = _cache[cache_key][1]
+        cache_key = f"ohlcv_{t}_{period}"
+        cached_data = cache.get(cache_key)
+        
+        # 캐시 구조: (date_str, dataframe)
+        if cached_data and cached_data[0] == today_str:
+            result[t] = cached_data[1]
         else:
             to_fetch.append(t)
 
@@ -51,7 +60,8 @@ def fetch_ohlcv(tickers: list[str], period: str = DATA_PERIOD) -> dict[str, pd.D
                 print(f"[Fetcher] {ticker}: 데이터 부족 ({len(df)}일) → skip")
                 continue
 
-            _cache[(ticker, period)] = (today, df)
+            cache_key = f"ohlcv_{ticker}_{period}"
+            cache.set(cache_key, (today_str, df), expire=86400 * 2) # 안전하게 2일 유지
             result[ticker] = df
         except Exception:
             print(f"[Fetcher] {ticker}: 파싱 실패 → skip")
@@ -61,15 +71,14 @@ def fetch_ohlcv(tickers: list[str], period: str = DATA_PERIOD) -> dict[str, pd.D
 
 
 def fetch_intraday(ticker: str, interval: str, period: str) -> pd.DataFrame | None:
-    """
-    단일 티커 분봉 데이터 수집. 당일 캐싱 (interval별 독립 캐시).
-    실패 시 None 반환 — 호출자가 None 처리 필수.
-
-    캐시 키: (ticker, date, interval) — 기존 _cache의 (ticker, period)와 충돌 없음.
-    """
-    key = (ticker, date.today(), interval)
-    if key in _intraday_cache:
-        return _intraday_cache[key]
+    """단일 티커 분봉 데이터 수집. 당일 캐싱."""
+    today_str = date.today().isoformat()
+    cache_key = f"intraday_{ticker}_{interval}_{today_str}"
+    
+    cached_df = cache.get(cache_key)
+    if cached_df is not None:
+        return cached_df
+        
     try:
         df = yf.Ticker(ticker).history(
             interval=interval, period=period, auto_adjust=True
@@ -78,7 +87,8 @@ def fetch_intraday(ticker: str, interval: str, period: str) -> pd.DataFrame | No
             df.index = df.index.tz_localize(None)
         if len(df) < 10:
             return None
-        _intraday_cache[key] = df
+            
+        cache.set(cache_key, df, expire=86400) # 24h
         return df
     except Exception:
         return None

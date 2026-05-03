@@ -1,113 +1,80 @@
 import asyncio
 import logging
 import os
+from contextlib import asynccontextmanager
+from datetime import datetime
 
-from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from api.routes.explore import router as explore_router
 from api.routes.screen import router as screen_router
 from api.routes.tickers import router as tickers_router
+from api.routes.chart import router as chart_router
+from api.routes.watchlist import router as watchlist_router
+from api.routes.signals import router as signals_router
+from api.deps import templates
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="StockScope", version="2.0.0")
+_background_task: asyncio.Task | None = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _background_task
+    from screener.batch_scheduler import start_background_scheduler
+    _background_task = await start_background_scheduler()
+    yield
+    logger.info("[App] 백그라운드 태스크 종료 중...")
+    if _background_task:
+        _background_task.cancel()
+        try:
+            await _background_task
+        except asyncio.CancelledError:
+            logger.info("[App] 백그라운드 태스크가 안전하게 취소되었습니다.")
+
+app = FastAPI(title="StockScope", version="3.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.include_router(explore_router)
 app.include_router(screen_router)
 app.include_router(tickers_router)
+app.include_router(chart_router)
+app.include_router(watchlist_router)
+app.include_router(signals_router)
 
-templates = Jinja2Templates(directory="templates")
-
-
-def _ago(dt) -> str:
-    """datetime → '방금 전 / N분 전 / N시간 전 / MM/DD' 문자열."""
-    if dt is None:
-        return "알 수 없음"
-    from datetime import datetime
-    diff = (datetime.now() - dt).total_seconds()
-    if diff < 60:
-        return "방금 전"
-    if diff < 3600:
-        return f"{int(diff // 60)}분 전"
-    if diff < 86400:
-        return f"{int(diff // 3600)}시간 전"
-    return dt.strftime("%m/%d")
-
-
-templates.env.filters["ago"] = _ago
-
-
-@app.on_event("startup")
-async def on_startup():
-    """앱 시작 시 배치 스케줄러(매크로, 의원거래) 백그라운드 실행."""
-    from screener.batch_scheduler import start as start_batch, _ESTIMATES
-    total_est = sum(_ESTIMATES.values())
-    logger.info("=" * 50)
-    logger.info("[App] StockScope 서버 시작")
-    logger.info(f"[App] 백그라운드 데이터 로드 시작 (예상 {total_est}초)")
-    for name, sec in _ESTIMATES.items():
-        logger.info(f"[App]   · {name}: ~{sec}초")
-    logger.info("[App] 로드 완료 전에도 스크리닝은 즉시 사용 가능")
-    logger.info("=" * 50)
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, start_batch)
-
+# ── 라우트 (통합) ──────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="about.html", context={"active_page": "about"}
-    )
-
-
-@app.get("/screen", response_class=HTMLResponse)
-async def screen(request: Request):
-    from screener.macro_fetcher import get_macro_context
-    from screener.fear_greed_fetcher import get_fear_greed
-    macro = get_macro_context()
-    fear_greed = get_fear_greed()
-    return templates.TemplateResponse(
-        request=request,
-        name="screen.html",
-        context={"active_page": "screen", "macro": macro, "fear_greed": fear_greed},
-    )
-
+def index(request: Request):
+    return RedirectResponse(url="/signals")
 
 @app.get("/about", response_class=HTMLResponse)
-async def about(request: Request):
+def about(request: Request):
+    from screener.macro_fetcher import get_sidebar_macro
+    macro = get_sidebar_macro()
     return templates.TemplateResponse(
-        request=request, name="about.html", context={"active_page": "about"}
+        request=request, name="about.html", context={"active_page": "about", "macro": macro}
     )
 
+# ── 기존 경로 리다이렉트 (선택 사항) ─────────────────────────
 
 def _verify_refresh_token(x_refresh_token: str | None) -> None:
     secret = os.getenv("REFRESH_TOKEN", "")
     if not secret or x_refresh_token != secret:
         raise HTTPException(status_code=403, detail="Invalid refresh token")
 
-
-@app.get("/api/refresh/macro")
-async def refresh_macro(x_refresh_token: str | None = Header(default=None)):
-    _verify_refresh_token(x_refresh_token)
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _do_macro_refresh)
-    return JSONResponse({"status": "ok", "refreshed": "macro"})
-
-
-@app.get("/api/refresh/fear-greed")
-async def refresh_fear_greed(x_refresh_token: str | None = Header(default=None)):
-    _verify_refresh_token(x_refresh_token)
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _do_fear_greed_refresh)
-    return JSONResponse({"status": "ok", "refreshed": "fear_greed"})
-
-
 def _do_macro_refresh():
     from screener.macro_fetcher import refresh_macro
     refresh_macro()
 
-
-def _do_fear_greed_refresh():
-    from screener.fear_greed_fetcher import get_fear_greed
-    get_fear_greed()
+@app.get("/api/refresh/macro")
+def api_refresh_macro(
+    background_tasks: BackgroundTasks,
+    x_refresh_token: str | None = Header(default=None),
+):
+    # BackgroundTasks를 적용하여 클라이언트 무한 로딩 해결
+    _verify_refresh_token(x_refresh_token)
+    background_tasks.add_task(_do_macro_refresh)
+    return JSONResponse({"status": "accepted", "msg": "Refresh started in background"})

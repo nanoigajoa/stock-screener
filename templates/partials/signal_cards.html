@@ -1,0 +1,128 @@
+{#-- 시그널 결과 카드 리스트. signals.py의 _render_signal_cards() + 요약 헤더 대체. --#}
+{% set _grade_icon = {"STRONG BUY": "⚡", "BUY": "▲", "WATCH": "◎", "NO SIGNAL": "–"} %}
+{% set _grade_cls  = {"STRONG BUY": "sig-strong-buy", "BUY": "sig-buy", "WATCH": "sig-watch", "NO SIGNAL": "sig-nosignal"} %}
+{% set _cat_labels = [("trend", "추세"), ("momentum", "모멘텀"), ("volume", "수급"), ("pattern", "패턴")] %}
+
+{# ── 요약 바 ── #}
+<div class="signal-summary">
+  총 {{ summary.total }}개 |
+  ⚡ {{ summary.strong_buy }} |
+  ▲ {{ summary.buy }} |
+  ◎ {{ summary.watch }} |
+  – {{ summary.no_signal }}
+</div>
+
+<div class="signal-results">
+{% for r in results %}
+{% set ticker     = r.ticker %}
+{% set price      = r.price or 0 %}
+{% set change     = r.change or 0.0 %}
+{% set grade      = r.signal_grade or "NO SIGNAL" %}
+{% set score      = r.signal_score or 0.0 %}
+{% set breakdown  = r.signal_breakdown or {} %}
+{% set entry_low  = r.entry_low %}
+{% set entry_high = r.entry_high %}
+{% set extras     = r.extras or {} %}
+{% set short_name = extras.short_name or "" %}
+{% set patterns   = r.detected_patterns or [] %}
+{% set grade_icon = _grade_icon.get(grade, "–") %}
+{% set grade_cls  = _grade_cls.get(grade, "sig-nosignal") %}
+
+{# ── 진입존 문자열 ── #}
+{% if entry_low and entry_high %}
+{% set zone_str = "$" ~ ("%.2f" % entry_low) ~ "–" ~ ("%.2f" % entry_high) %}
+{% else %}
+{% set zone_str = "–" %}
+{% endif %}
+
+{# ── 모달용 info JSON ── #}
+{% set _info = {
+  "price":      price,
+  "change":     change,
+  "short_name": short_name,
+  "grade":      grade,
+  "score":      score,
+  "breakdown":  breakdown,
+  "entry_low":  entry_low,
+  "entry_high": entry_high,
+  "patterns":   patterns
+} %}
+
+<div class="signal-card {{ grade_cls }}"
+     data-ticker="{{ ticker }}"
+     data-signal-grade="{{ grade }}"
+     data-info="{{ _info | tojson }}">
+
+  {# ── 순위 ── #}
+  <div class="sc-rank"><span class="pos">#</span>{{ "%02d" % loop.index }}</div>
+
+  {# ── 헤더 ── #}
+  <div class="sc-header">
+    <div class="sc-ticker">{{ ticker }}</div>
+    <div class="short-name">{{ short_name }}</div>
+  </div>
+
+  {# ── 등급 + 스코어 ── #}
+  <div class="sc-meta">
+    <div class="sc-grade-badge">
+      {%- if grade != "NO SIGNAL" %}{{ grade_icon }} {% endif %}{{ grade -}}
+    </div>
+    <div class="sc-score">SCORE <b>{{ "%.0f" % (score * 100) }}</b>/100</div>
+  </div>
+
+  {# ── 카테고리 점수 바 ── #}
+  <div class="sc-cats">
+    {% for key, label in _cat_labels %}
+    {% set val     = breakdown.get(key, 0.0) %}
+    {% set bar_pct = val * 100 %}
+    {% set tone    = "tone-mute" if val < 0.25 else ("tone-bear" if val < 0.5 else ("tone-watch" if val < 0.75 else "")) %}
+    <div class="sc-cat">
+      <div class="sc-cat-head">
+        <span class="sc-cat-label">{{ label }}</span>
+        <span class="sc-cat-val">{{ "%.0f" % bar_pct }}</span>
+      </div>
+      <div class="sc-bar">
+        <div class="sc-bar-fill {{ tone }}" style="width:{{ "%.0f" % bar_pct }}%"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── 가격 + 변동률 + 진입존 ── #}
+  <div class="sc-price-zone">
+    <div class="sc-price">
+      ${{ "%.2f" % price }}
+      {% if market_open %}
+      <span class="price-status live">LIVE·15M</span>
+      {% else %}
+      <span class="price-status close">CLOSE</span>
+      {% endif %}
+    </div>
+    <div class="sc-change {{ 'up' if change >= 0 else 'down' }}">
+      {{ "▲" if change >= 0 else "▼" }} {{ "%.2f" % (change | abs) }}%
+    </div>
+    <div class="sig-zone">
+      <span class="lbl">ENTRY</span><span class="val">{{ zone_str }}</span>
+    </div>
+  </div>
+
+  {# ── 액션 버튼 ── #}
+  <div class="sc-footer">
+    <button class="icon-btn watchlist-btn" data-ticker="{{ ticker }}" title="Watchlist">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+        <path d="M7 1.5L8.7 5L12.5 5.5L9.7 8.2L10.4 12L7 10.2L3.6 12L4.3 8.2L1.5 5.5L5.3 5L7 1.5Z"
+              stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      </svg>
+    </button>
+    <button class="chart-btn" data-ticker="{{ ticker }}">
+      <svg class="icon" width="11" height="11" viewBox="0 0 12 12" fill="none">
+        <path d="M1 10L4 6L7 8L11 2" stroke="currentColor" strokeWidth="1.4"
+              strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      CHART
+    </button>
+  </div>
+
+</div>
+{% endfor %}
+</div>

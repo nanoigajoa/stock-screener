@@ -1,4 +1,5 @@
 .venv/
+.venv */
 __pycache__/
 *.pyc
 *.pyo
@@ -7,3 +8,10 @@ output/
 .claude/
 *.log
 .DS_Store
+data/watchlist.json
+data/cache/
+.playwright-mcp/
+# 루트 임시 파일
+*.png
+/prototype/
+/static/new_css/

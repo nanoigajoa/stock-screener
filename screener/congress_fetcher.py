@@ -113,3 +113,4 @@ def _fetch_from_network() -> None:
     else:
         logger.warning("[Congress] 모든 소스 실패. 의원거래 배지 비활성화됨.")
         logger.warning("[Congress] 수동 갱신: python scripts/download_congress_data.py")
+        _fetched_at = datetime.now()  # 실패해도 찍어야 재호출 루프 방지

@@ -1,142 +1,145 @@
 {% extends "base.html" %}
 
 {% block title %}스크리닝 — StockScope{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="/static/css/screen.css">{% endblock %}
+{% block container_attrs %}data-screen-label="02 Screener"{% endblock %}
 
 {% block content %}
 <div class="macro-banner">
   <div class="macro-main">
     {% if macro %}
-    📊 &nbsp;
-    기준금리 <strong>{{ macro.fed_funds }}%</strong> &nbsp;·&nbsp;
-    CPI <strong>{{ macro.cpi_yoy }}%</strong> &nbsp;·&nbsp;
-    실업률 <strong>{{ macro.unrate }}%</strong> &nbsp;·&nbsp;
-    장단기금리차 <strong>{{ macro.t10y2y }}%</strong> &nbsp;·&nbsp;
-    VIX <strong>{{ macro.vix if macro.vix else "N/A" }}</strong>
+    <span class="pair"><span class="lbl">FED</span><strong>{{ macro.fed_funds }}%</strong></span>
+    <span class="pair"><span class="lbl">CPI</span><strong>{{ macro.cpi_yoy }}%</strong></span>
+    <span class="pair"><span class="lbl">UNRATE</span><strong>{{ macro.unrate }}%</strong></span>
+    <span class="pair"><span class="lbl">10Y-2Y</span><strong>{{ "+" if macro.t10y2y >= 0 }}{{ macro.t10y2y }}%</strong></span>
+    <span class="pair"><span class="lbl">VIX</span><strong>{{ macro.vix if macro.vix else "N/A" }}</strong></span>
     {% if macro.regime %}
-    &nbsp;|&nbsp; <span class="macro-regime">{{ macro.regime }}</span>
+    <span class="macro-regime">{{ macro.regime }}</span>
     {% endif %}
     {% else %}
-    📊 &nbsp; <span style="color:var(--text3)">매크로 데이터 로드 중...</span>
-    {% endif %}
-
-    {% if fear_greed and fear_greed.score is defined %}
-    &nbsp;&nbsp;
-    <span class="fg-badge fg-{{ 'fear' if fear_greed.score < 45 else ('neutral' if fear_greed.score < 56 else 'greed') }}">
-      공포탐욕 {{ fear_greed.score }} {{ fear_greed.label }}
-    </span>
+    <span style="color:var(--text-faint)">MACD DATA LOADING...</span>
     {% endif %}
   </div>
-
   <div class="macro-meta">
     {% if macro and macro.fetched_at %}
-    <span title="{{ macro.note }}">FRED {{ macro.fetched_at | ago }}</span>
-    {% endif %}
-    {% if fear_greed and fear_greed.fetched_at is defined %}
-    &nbsp;·&nbsp;
-    <span>공포탐욕 {{ fear_greed.fetched_at | ago }}</span>
+    FRED · {{ macro.fetched_at | ago }}
     {% endif %}
   </div>
 </div>
+
 <h1 class="page-title">US Stock Screener</h1>
 <p class="page-subtitle">7가지 기술적 지표로 걸러낸 종목만 보여드립니다 — 감이 아닌 데이터로</p>
-
-<div class="intro-card">
-  <div class="intro-grid">
-    <div class="intro-section">
-      <p class="intro-label">무엇을 분석하나요</p>
-      <p class="intro-text">
-        미국 상장 종목 중 <strong>이동평균 정배열 · RSI · MACD · 볼린저밴드 · 거래량 · 지지선 반등 · 추세 지속성</strong>
-        7가지 체크리스트를 통과한 종목만 추립니다.
-        Finviz 사전 필터(거래량 200만↑, 주가 $10↑, 200일선 위)를 먼저 통과한 종목에만 적용합니다.
-      </p>
-    </div>
-    <div class="intro-section">
-      <p class="intro-label">등급이 의미하는 것</p>
-      <div class="grade-legend">
-        <div class="legend-item"><span class="dot dot-s"></span><strong>S급</strong> — 7개 중 6개 이상 충족. 즉시 진입 검토</div>
-        <div class="legend-item"><span class="dot dot-a"></span><strong>A급</strong> — 4~5개 충족. 분할 매수 고려</div>
-        <div class="legend-item"><span class="dot dot-b"></span><strong>B급</strong> — 2~3개 충족. 추가 신호 확인 후 대기</div>
-        <div class="legend-item"><span class="dot dot-skip"></span><strong>SKIP</strong> — 급등·급락·RSI 과열 등 진입 부적합</div>
-      </div>
-    </div>
-    <div class="intro-section">
-      <p class="intro-label">투자자에게 무엇이 다른가요</p>
-      <p class="intro-text">
-        매수 후 <strong>+8% 1차 목표 / +15% 2차 목표</strong>, 손절은 <strong>-15%</strong>로 고정합니다.
-        기대 수익이 리스크의 2배 이상인 종목만 진입 신호로 간주합니다.
-        뉴스 리스크가 감지된 종목은 자동으로 SKIP 처리됩니다.
-      </p>
-    </div>
-  </div>
-</div>
 
 <div class="screen-form">
   <form id="screen-form">
     <div class="form-row">
-
-      <div class="form-group" style="flex:2">
-        <label>종목 입력 (비우면 Finviz 전체 스캔)</label>
-        <select id="ticker-select" multiple placeholder="예: AAPL MSFT NVDA"></select>
+      <div class="form-group" style="flex: 2">
+        <label>TICKERS · LEAVE BLANK FOR FULL FINVIZ SCAN</label>
+        <select id="ticker-select" multiple placeholder="AAPL  MSFT  NVDA  AVGO …"></select>
       </div>
-
-      <div class="form-group">
-        <label>등급 필터</label>
+      <div class="form-group" style="flex: 1; min-width: 140px">
+        <label>GRADE FILTER</label>
         <select id="grade-filter">
-          <option value="">전체</option>
-          <option value="S">S급만</option>
-          <option value="A">A급만</option>
-          <option value="B">B급만</option>
+          <option value="">All grades</option>
+          <option value="S">S grade only</option>
+          <option value="A">A grade only</option>
+          <option value="B">B grade only</option>
         </select>
       </div>
-
-      <div class="form-group">
-        <label>데이터 기간</label>
-        <select id="period-select">
-          <option value="3mo">3개월</option>
-          <option value="6mo" selected>6개월</option>
-          <option value="1y">1년</option>
-        </select>
-      </div>
-
-      <button type="submit" id="submit-btn">스크리닝 시작</button>
+      <button type="submit" id="submit-btn">▶ RUN SCAN</button>
     </div>
-
+    
     <div class="advanced-toggle" id="advanced-toggle" onclick="toggleAdvanced()">
-      ⚙️ 고급 설정 <span id="advanced-arrow">▼</span>
+      ⚙️ ADVANCED <span id="advanced-arrow">▼</span>
     </div>
-    <div id="advanced-settings" style="display:none">
-      <div class="advanced-inner">
-        <div class="advanced-section">
-          <p class="advanced-label">RSI 범위</p>
-          <div class="rsi-row">
-            <input type="number" id="rsi-min" value="45" min="10" max="79" title="RSI 최소">
-            <span class="rsi-sep">~</span>
-            <input type="number" id="rsi-max" value="65" min="11" max="90" title="RSI 최대">
+
+    <div id="advanced-settings" style="display:none; margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px;">
+      <div class="form-row" style="gap: 24px;">
+        <div class="form-group" style="flex: 1">
+          <label>RSI RANGE</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="number" id="rsi-min" value="45" min="10" max="79" style="width: 70px;">
+            <span style="color: var(--text-faint)">~</span>
+            <input type="number" id="rsi-max" value="65" min="11" max="90" style="width: 70px;">
           </div>
         </div>
-        <div class="advanced-section">
-          <p class="advanced-label">체크리스트 항목</p>
-          <div class="check-grid">
-            <label class="check-item"><input type="checkbox" name="checks" value="ma_alignment" checked> 이동평균 정배열</label>
-            <label class="check-item"><input type="checkbox" name="checks" value="rsi" checked> RSI</label>
-            <label class="check-item"><input type="checkbox" name="checks" value="volume" checked> 거래량</label>
-            <label class="check-item"><input type="checkbox" name="checks" value="macd" checked> MACD</label>
-            <label class="check-item"><input type="checkbox" name="checks" value="support" checked> 지지/저항</label>
-            <label class="check-item"><input type="checkbox" name="checks" value="bollinger" checked> 볼린저밴드</label>
-            <label class="check-item"><input type="checkbox" name="checks" value="trend" checked> 추세 지속성</label>
+        <div class="form-group" style="flex: 2">
+          <label>RATIO SETTINGS (%)</label>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 10px; color: var(--text-faint)">T1</span>
+              <input type="number" id="target-1" value="8" min="1" max="50" style="width: 60px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 10px; color: var(--text-faint)">T2</span>
+              <input type="number" id="target-2" value="15" min="2" max="100" style="width: 60px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 10px; color: var(--text-faint)">SL</span>
+              <input type="number" id="stop-loss" value="7" min="1" max="50" style="width: 60px;">
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 16px;">
+        <label>CHECKLIST PIPELINE</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" name="checks" value="ma_alignment" checked> MA Align
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" name="checks" value="rsi" checked> RSI
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" name="checks" value="volume" checked> Volume
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" name="checks" value="macd" checked> MACD
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" name="checks" value="support" checked> Support/Resist
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" name="checks" value="bollinger" checked> Bollinger
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" name="checks" value="trend" checked> Trend Continuity
+          </label>
         </div>
       </div>
     </div>
   </form>
 </div>
 
+<!-- 필터 바 -->
+<div class="sig-filter-bar" id="screen-filter-bar" style="display: none;">
+  <button class="pill is-active" data-grade="">ALL</button>
+  <button class="pill tone-bull" data-grade="S">S GRADE</button>
+  <button class="pill tone-watch" data-grade="A">A GRADE</button>
+  <button class="pill" data-grade="B">B GRADE</button>
+  <span class="meta" id="screen-meta">SCORED BY 7-CHECK PIPELINE</span>
+</div>
+
 <div id="result-area">
-  <p style="color:#4a5568; text-align:center; padding:2rem;">
-    종목을 입력하거나 Finviz 전체 스캔을 실행하세요.
+  <p style="color:var(--text-faint); text-align:center; padding:3rem; font-family: var(--font-mono); font-size: 12px;">
+    ENTER TICKERS OR RUN FULL SCAN TO BEGIN ANALYSIS.
   </p>
+</div>
+
+<!-- 차트 모달 -->
+<div id="chart-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span id="modal-ticker"></span>
+        <span id="modal-company"></span>
+      </div>
+      <button id="modal-close" aria-label="닫기">✕</button>
+    </div>
+    <div id="lw-chart-container"></div>
+    <div id="modal-detail"></div>
+  </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}<script src="/static/js/screen.js"></script>{% endblock %}
+{% block extra_js %}<script src="/static/js/screen.js?v=7"></script>{% endblock %}

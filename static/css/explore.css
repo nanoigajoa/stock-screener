@@ -1,0 +1,192 @@
+/* ── Explore Hero ────────────────────────────────── */
+.explore-hero {
+  text-align: center;
+  padding: 2rem 0 4rem;
+}
+.hero-title {
+  font-size: 4rem;
+  font-weight: 900;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, var(--text) 0%, var(--bull) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.05em;
+}
+.hero-subtitle { color: var(--text-faint); font-size: 1.1rem; margin-bottom: 3rem; }
+
+/* ── Search & Suggestions ────────────────────────── */
+.search-container { max-width: 800px; margin: 0 auto; }
+.search-box {
+  display: flex; gap: 0.5rem; background: var(--surface); padding: 0.5rem;
+  border-radius: var(--r-lg); border: 1px solid var(--border);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4); transition: all 0.3s;
+}
+.search-box:focus-within { border-color: var(--bull); transform: translateY(-2px); }
+#ticker-search { flex: 1; }
+.ts-control { border: none !important; background: transparent !important; padding: 0.75rem 1.5rem !important; font-size: 1.1rem !important; }
+.search-btn {
+  background: var(--bull); color: white; border: none; border-radius: var(--r);
+  padding: 0 2rem; font-weight: 800; cursor: pointer;
+}
+
+.search-suggestions { margin-top: 1.5rem; display: flex; justify-content: center; }
+.suggest-btn {
+  background: var(--bull-soft); color: var(--bull); border: 1px solid rgba(0, 212, 170, 0.2);
+  padding: 0.6rem 1.5rem; border-radius: 999px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.suggest-btn:hover { background: var(--bull); color: white; transform: translateY(-2px); }
+
+/* ── Explore Guide ────────────────────────────────── */
+.explore-guide {
+  text-align: center; padding: 5rem 2rem; background: var(--surface);
+  border: 1px dashed var(--border); border-radius: 10px; color: var(--text-faint);
+}
+.explore-guide p { font-size: 1.1rem; line-height: 1.6; }
+.explore-guide b { color: var(--bull); }
+
+/* ── Results Area ─────────────────────────────────── */
+.explore-summary {
+  font-size: 0.9rem; color: var(--text-faint); margin-bottom: 1.5rem;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;
+}
+.explore-results { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── Explore Card (Restored & Optimized) ─────────── */
+.explore-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
+}
+.explore-card:hover { transform: translateX(8px); border-color: var(--bull); background: var(--surface-alt); }
+
+.ec-rank { font-size: 1.5rem; font-weight: 900; color: var(--text-faint); width: 40px; text-align: center; font-style: italic; opacity: 0.5; }
+.explore-card:nth-child(1) .ec-rank { color: var(--watch); opacity: 1; }
+
+.ec-header { display: flex; align-items: center; gap: 1rem; width: 200px; flex-shrink: 0; }
+.ticker-box { display: flex; flex-direction: column; }
+.ticker { font-size: 1.3rem; font-weight: 900; color: var(--text); line-height: 1; }
+.short-name { font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+
+.ec-metrics { display: flex; flex-direction: column; gap: 0.5rem; width: 160px; flex-shrink: 0; }
+.metric-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.m-label { font-size: 0.65rem; font-weight: 800; color: var(--text-faint); text-transform: uppercase; }
+
+.ec-summary { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+.ec-summary-top { display: flex; align-items: center; gap: 1rem; }
+.ec-cats { display: flex; gap: 0.5rem; }
+
+.pattern-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--watch);
+  background: var(--watch-soft);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(246, 201, 14, 0.2);
+  text-transform: uppercase;
+  animation: patternPulse 2s infinite;
+}
+
+@keyframes patternPulse {
+  0% { box-shadow: 0 0 0 0 rgba(246, 201, 14, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(246, 201, 14, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(246, 201, 14, 0); }
+}
+
+.nl-text { font-size: 0.88rem; color: var(--text-muted); font-weight: 500; line-height: 1.4; border-left: 2px solid var(--border); padding-left: 0.75rem; }
+
+.ec-price-action { display: flex; flex-direction: column; align-items: flex-end; width: 140px; text-align: right; gap: 0.5rem; }
+.price { font-size: 1.2rem; font-weight: 800; color: var(--text); }
+.chart-btn {
+  background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--r);
+  color: var(--text); padding: 0.4rem 0.8rem; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+}
+
+/* ── Unified Modal Phase 3 ────────────────────────── */
+#modal-detail { border-top: 1px solid var(--border); background: var(--bg); }
+
+.modal-target-zone {
+  padding: 1.5rem 2.5rem; background: rgba(0, 212, 170, 0.03);
+  border-bottom: 1px solid var(--border); display: flex;
+  justify-content: center; align-items: center; gap: 1.5rem;
+}
+.tz-label { font-size: 0.85rem; font-weight: 800; color: var(--text-faint); text-transform: uppercase; }
+.tz-val { font-size: 1.4rem; font-weight: 900; color: var(--bull); }
+
+.modal-split-view { display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: var(--border); }
+.split-col { background: var(--bg); padding: 2rem 2.5rem; }
+.split-left { border-right: 1px solid var(--border); }
+
+.col-header { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--bull); margin-bottom: 1.5rem; letter-spacing: 0.05em; }
+
+.indicator-grid { display: grid; gap: 10px; }
+.grid-4 { grid-template-columns: repeat(2, 1fr); }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+.grid-item {
+  display: flex; align-items: center; gap: 0.75rem; padding: 1rem;
+  background: var(--surface); border-radius: var(--r-lg); font-size: 0.85rem; font-weight: 600; border-left: 4px solid transparent;
+}
+.grid-item.pass { border-left-color: var(--bull); }
+.grid-item.fail { border-left-color: var(--bear); opacity: 0.8; }
+.grid-item.warn { border-left-color: var(--watch); }
+.grid-item .icon { font-size: 1.1rem; }
+
+.nl-briefing-box {
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  font-style: italic;
+}
+
+/* ── Pattern Display (Phase 3) ─────────────────── */
+.pattern-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.pattern-badge-large {
+  background: var(--watch-soft);
+  color: var(--watch);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border: 1px solid rgba(246, 201, 14, 0.3);
+  box-shadow: 0 0 12px var(--watch-soft);
+}
+.pattern-none {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+
+@media (max-width: 1024px) {
+  .explore-card { flex-wrap: wrap; padding: 1.5rem; }
+  .ec-metrics { width: auto; flex: 1; }
+  .ec-summary { width: 100%; order: 3; margin-top: 1rem; }
+  .ec-price-action { order: 2; width: auto; margin-left: auto; }
+}
+
+@media (max-width: 900px) {
+  .modal-split-view { grid-template-columns: 1fr; }
+  .split-left { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* ── Market Pulse Dashboard ───────────────────────── */
+.market-pulse { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+.pulse-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; position: relative; overflow: hidden;
+}
+.pulse-label { font-size: 0.7rem; font-weight: 800; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+.fg-display, .regime-display { display: flex; align-items: baseline; gap: 0.75rem; }
+.fg-score { font-size: 2rem; font-weight: 900; color: var(--bull); }
+.fg-label { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.regime-text { font-size: 1.25rem; font-weight: 800; color: var(--watch); }
+.pulse-meta, .macro-stats { font-size: 0.85rem; color: var(--text-faint); display: flex; gap: 1rem; }

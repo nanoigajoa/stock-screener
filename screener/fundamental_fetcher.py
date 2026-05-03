@@ -1,20 +1,19 @@
 import yfinance as yf
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import date
-
-_cache: dict[tuple[str, date], dict] = {}
-
+from screener.cache_manager import cache
 
 def fetch_fundamentals(tickers: list[str]) -> dict[str, dict]:
     """비-SKIP 종목의 펀더멘털 데이터 병렬 조회. 당일 캐싱 적용."""
-    today = date.today()
+    today_str = date.today().isoformat()
     results = {}
     to_fetch = []
 
     for t in tickers:
-        key = (t, today)
-        if key in _cache:
-            results[t] = _cache[key]
+        cache_key = f"fundamental_{t}_{today_str}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            results[t] = cached_data
         else:
             to_fetch.append(t)
 
@@ -28,7 +27,9 @@ def fetch_fundamentals(tickers: list[str]) -> dict[str, dict]:
                 data = fut.result(timeout=10)
             except (FuturesTimeoutError, Exception):
                 data = {}
-            _cache[(ticker, today)] = data
+            
+            cache_key = f"fundamental_{ticker}_{today_str}"
+            cache.set(cache_key, data, expire=86400) # 24h
             results[ticker] = data
 
     return results
@@ -50,15 +51,19 @@ def _fetch_one(ticker: str) -> dict:
     except Exception:
         pass
 
-    # 2. Short Ratio + info
+    # 2. Short Ratio + info + Company Details
     short_ratio = None
     analyst_target = None
     recommendation = ""
+    short_name = ""
+    website = ""
     try:
         info = t.info or {}
         short_ratio = info.get('shortRatio')
         analyst_target = info.get('targetMeanPrice')
         recommendation = info.get('recommendationKey', '')
+        short_name = info.get('shortName', '')
+        website = info.get('website', '')
     except Exception:
         pass
 
@@ -67,4 +72,6 @@ def _fetch_one(ticker: str) -> dict:
         'short_ratio': short_ratio,
         'analyst_target': analyst_target,
         'recommendation': recommendation,
+        'short_name': short_name,
+        'website': website,
     }

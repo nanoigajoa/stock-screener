@@ -1,0 +1,549 @@
+/* ============================================================
+   StockScope — Radical SHELL Variants
+   Apply via <html data-shell="topdeck" | "floating" | "spatial" | "hud" >
+   These rewrite the entire chrome, not just the sidebar.
+   ============================================================ */
+
+
+/* ════════════════════════════════════════════════════════
+   ① TOPDECK  —  Trading-floor: full-width top bar, no sidebar
+   ════════════════════════════════════════════════════════ */
+[data-shell="topdeck"] .app-layout {
+  grid-template-columns: 1fr;
+  grid-template-rows: 56px 36px 1fr;
+}
+[data-shell="topdeck"] .sidebar {
+  grid-column: 1; grid-row: 1 / 3;
+  display: grid;
+  grid-template-columns: 220px 1fr auto;
+  grid-template-rows: 56px 36px;
+  border-right: none;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-deep) 100%);
+  padding: 0;
+  width: 100%;
+  position: sticky; top: 0; z-index: 50;
+}
+
+/* row 1: brand + nav + macro tape */
+[data-shell="topdeck"] .sidebar-brand {
+  grid-column: 1; grid-row: 1;
+  margin: 0;
+  padding: 0 20px;
+  display: flex; align-items: center;
+  border-right: 1px solid var(--border);
+}
+[data-shell="topdeck"] .sidebar-brand .brand-name { font-size: 14px; }
+
+[data-shell="topdeck"] .sidebar-section-label { display: none; }
+[data-shell="topdeck"] .sidebar-nav {
+  grid-column: 2; grid-row: 1;
+  flex-direction: row;
+  padding: 0 16px;
+  gap: 2px;
+  align-items: center;
+}
+[data-shell="topdeck"] .nav-item {
+  height: 56px;
+  padding: 0 14px;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+}
+[data-shell="topdeck"] .nav-item.active::before { display: none; }
+[data-shell="topdeck"] .nav-item.active {
+  border-bottom-color: var(--bull);
+  background: transparent;
+  color: var(--text);
+}
+[data-shell="topdeck"] .nav-item .nav-kbd { display: none; }
+
+/* macro tape (right of nav, row 1) — show only key tickers */
+[data-shell="topdeck"] .sidebar-spacer { display: none; }
+[data-shell="topdeck"] .macro-stack {
+  grid-column: 3; grid-row: 1 / 3;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: row; align-items: center;
+  gap: 0;
+  height: 100%;
+}
+[data-shell="topdeck"] .macro-stack-title { display: none; }
+[data-shell="topdeck"] .macro-row {
+  flex-direction: column; align-items: flex-start;
+  gap: 0;
+  padding: 0 18px;
+  height: 100%;
+  justify-content: center;
+  border-right: 1px solid var(--border);
+  font-size: 10px;
+}
+[data-shell="topdeck"] .macro-row .macro-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--text-faint);
+}
+[data-shell="topdeck"] .macro-row > span:last-child {
+  display: flex; gap: 6px; align-items: baseline;
+}
+[data-shell="topdeck"] .macro-val { font-size: 13px; }
+[data-shell="topdeck"] .fg-gauge {
+  padding: 0 18px;
+  height: 100%;
+  display: flex; flex-direction: column; justify-content: center;
+  min-width: 140px;
+}
+[data-shell="topdeck"] .fg-gauge .fg-head { font-size: 9px; letter-spacing: 0.12em; }
+[data-shell="topdeck"] .sidebar-footer { display: none; }
+
+/* row 2: scrolling ticker tape with watchlist + signal stats */
+[data-shell="topdeck"] .sidebar::after {
+  content: "AAPL +1.24% · NVDA +3.18% · TSLA −0.92% · MSFT +0.45% · META +2.10% · GOOGL +0.88% · AMZN +1.55% · AMD +4.21%";
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex; align-items: center;
+  height: 36px;
+  padding: 0 20px;
+  background: var(--surface-deep);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: ticker-scroll 60s linear infinite;
+}
+@keyframes ticker-scroll {
+  0%   { background-position: 0 0; }
+  100% { background-position: -2000px 0; }
+}
+
+[data-shell="topdeck"] .main-content {
+  grid-column: 1; grid-row: 3;
+  border-left: none;
+}
+[data-shell="topdeck"] .container {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 28px 32px;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   ② FLOATING  —  Glass panels float over a dark canvas
+   no fixed sidebar; brand floats top-left, nav floats bottom-center
+   ════════════════════════════════════════════════════════ */
+[data-shell="floating"] body {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0, 212, 170, 0.06), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(212, 163, 255, 0.05), transparent 60%),
+    var(--bg);
+}
+[data-shell="floating"] .app-layout {
+  grid-template-columns: 1fr;
+}
+[data-shell="floating"] .sidebar {
+  position: fixed;
+  inset: auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  pointer-events: none;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  display: block;
+}
+[data-shell="floating"] .sidebar > * { pointer-events: auto; }
+
+/* Brand: floating top-left pill */
+[data-shell="floating"] .sidebar-brand {
+  position: fixed;
+  top: 24px; left: 24px;
+  margin: 0;
+  padding: 10px 18px;
+  background: rgba(13, 17, 23, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  z-index: 110;
+}
+
+/* Nav: floating bottom-center dock */
+[data-shell="floating"] .sidebar-section-label { display: none; }
+[data-shell="floating"] .sidebar-nav {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+  padding: 6px;
+  background: rgba(13, 17, 23, 0.78);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  box-shadow:
+    0 12px 40px -10px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,255,255,0.02) inset;
+  gap: 2px;
+}
+[data-shell="floating"] .nav-item {
+  width: 44px; height: 44px;
+  padding: 0;
+  border-radius: 100px;
+  justify-content: center;
+  position: relative;
+}
+[data-shell="floating"] .nav-item span:not(.nav-icon) { display: none; }
+[data-shell="floating"] .nav-item.active::before { display: none; }
+[data-shell="floating"] .nav-item.active {
+  background: var(--bull-soft);
+  color: var(--bull);
+}
+[data-shell="floating"] .nav-item:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%; transform: translateX(-50%);
+  padding: 5px 10px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Macro stack: floating right-side panel */
+[data-shell="floating"] .sidebar-spacer { display: none; }
+[data-shell="floating"] .macro-stack {
+  position: fixed;
+  top: 24px; right: 24px;
+  width: 240px;
+  margin: 0;
+  background: rgba(13, 17, 23, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  z-index: 110;
+}
+[data-shell="floating"] .sidebar-footer { display: none; }
+
+[data-shell="floating"] .main-content { border: none; }
+[data-shell="floating"] .container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 88px 24px 120px;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   ③ SPATIAL  —  Magazine canvas with oversized typography,
+   asymmetric grid, ambient macro grid in the gutters
+   ════════════════════════════════════════════════════════ */
+[data-shell="spatial"] body {
+  background:
+    linear-gradient(180deg, #060a14 0%, var(--bg) 40%);
+}
+[data-shell="spatial"] .app-layout {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  position: relative;
+}
+
+/* Sidebar collapses into thin left vertical brand strip */
+[data-shell="spatial"] .sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 56px;
+  background: transparent;
+  border-right: 1px solid var(--border);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 50;
+}
+[data-shell="spatial"] .sidebar-brand {
+  margin: 0;
+  padding: 18px 0;
+  width: 100%;
+  display: flex; justify-content: center;
+  border-bottom: 1px solid var(--border);
+}
+[data-shell="spatial"] .sidebar-brand .brand-name {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  margin-top: 180px;
+  pointer-events: none;
+}
+[data-shell="spatial"] .sidebar-brand a { position: relative; }
+[data-shell="spatial"] .sidebar-brand .brand-icon { position: relative; z-index: 2; }
+
+[data-shell="spatial"] .sidebar-section-label { display: none; }
+[data-shell="spatial"] .sidebar-nav {
+  flex-direction: column;
+  padding: 14px 8px;
+  gap: 4px;
+  width: 100%;
+  align-items: center;
+}
+[data-shell="spatial"] .nav-item {
+  width: 40px; height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 8px;
+}
+[data-shell="spatial"] .nav-item span:not(.nav-icon) { display: none; }
+[data-shell="spatial"] .nav-item.active::before { display: none; }
+[data-shell="spatial"] .nav-item.active {
+  background: var(--bull-soft);
+  color: var(--bull);
+}
+[data-shell="spatial"] .nav-item:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%; transform: translateY(-50%);
+  padding: 5px 10px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 100;
+}
+[data-shell="spatial"] .sidebar-spacer { display: none; }
+
+/* Macro stack: bottom of left rail, vertical, ultra-compact */
+[data-shell="spatial"] .macro-stack {
+  margin: auto 0 0;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+[data-shell="spatial"] .macro-stack-title,
+[data-shell="spatial"] .macro-row .macro-label,
+[data-shell="spatial"] .macro-delta,
+[data-shell="spatial"] .fg-head { display: none; }
+[data-shell="spatial"] .macro-row {
+  flex-direction: column;
+  padding: 4px 0;
+  font-size: 9px;
+  text-align: center;
+  border-bottom: 1px dashed rgba(255,255,255,0.04);
+}
+[data-shell="spatial"] .macro-val { font-size: 9px; }
+[data-shell="spatial"] .fg-gauge { padding: 4px; }
+[data-shell="spatial"] .fg-bar { height: 2px; }
+[data-shell="spatial"] .sidebar-footer { display: none; }
+
+/* Main content: magazine layout, oversized hero */
+[data-shell="spatial"] .main-content {
+  margin-left: 56px;
+  border-left: none;
+}
+[data-shell="spatial"] .container {
+  max-width: none;
+  padding: 0;
+}
+
+/* Inject editorial hero before page content */
+[data-shell="spatial"] .container::before {
+  content: "MARKET\AINTELLIGENCE";
+  white-space: pre;
+  display: block;
+  padding: 80px 64px 24px;
+  font-family: var(--font-ui);
+  font-size: clamp(72px, 10vw, 160px);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.05em;
+  color: var(--text);
+  background:
+    linear-gradient(180deg, var(--text) 0%, var(--text) 50%, transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+[data-shell="spatial"] .container::after {
+  content: "Vol. 03 · Issue 042 · " attr(data-screen-label);
+  display: block;
+  position: absolute;
+  top: 84px; right: 64px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--bull);
+  text-transform: uppercase;
+}
+[data-shell="spatial"] .container > *:not(:first-child),
+[data-shell="spatial"] .container > * {
+  padding-left: 64px;
+  padding-right: 64px;
+}
+[data-shell="spatial"] .macro-banner {
+  margin: 0 !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  padding: 14px 64px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   ④ HUD  —  Mission-control: corner brackets, crosshair grid,
+   data corners, scanning overlay
+   ════════════════════════════════════════════════════════ */
+[data-shell="hud"] body {
+  background: var(--bg);
+  background-image:
+    linear-gradient(rgba(0, 212, 170, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 170, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
+}
+[data-shell="hud"] .app-layout {
+  grid-template-columns: 1fr;
+  padding: 16px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Corner brackets — outer frame */
+[data-shell="hud"] .app-layout::before,
+[data-shell="hud"] .app-layout::after {
+  content: "";
+  position: fixed;
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--bull);
+  pointer-events: none;
+  z-index: 200;
+}
+[data-shell="hud"] .app-layout::before {
+  top: 12px; left: 12px;
+  border-right: none; border-bottom: none;
+}
+[data-shell="hud"] .app-layout::after {
+  bottom: 12px; right: 12px;
+  border-left: none; border-top: none;
+}
+
+/* Status strip at very top */
+[data-shell="hud"] body::before {
+  content: "● SYS:ONLINE     LAT:12ms     UPLINK:STABLE     SESSION:NYSE-OPEN     STREAM:LIVE";
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 22px;
+  display: flex; align-items: center;
+  padding: 0 44px;
+  background: rgba(0, 212, 170, 0.06);
+  border-bottom: 1px solid rgba(0, 212, 170, 0.18);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  color: var(--bull);
+  z-index: 199;
+  white-space: pre;
+}
+[data-shell="hud"] body::after {
+  content: "STOCKSCOPE_TERMINAL_v3.2.1 // CLEARANCE: STANDARD";
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 22px;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 0 44px;
+  background: rgba(13, 17, 23, 0.92);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  color: var(--text-faint);
+  z-index: 199;
+}
+
+[data-shell="hud"] .sidebar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin: 22px 0 22px;
+  padding: 18px 16px;
+  position: relative;
+}
+[data-shell="hud"] .sidebar::before,
+[data-shell="hud"] .sidebar::after {
+  content: "";
+  position: absolute;
+  width: 12px; height: 12px;
+  border: 1px solid var(--bull);
+}
+[data-shell="hud"] .sidebar::before {
+  top: -1px; left: -1px;
+  border-right: none; border-bottom: none;
+}
+[data-shell="hud"] .sidebar::after {
+  bottom: -1px; right: -1px;
+  border-left: none; border-top: none;
+}
+
+[data-shell="hud"] .main-content {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin: 22px 0 22px;
+  position: relative;
+  background:
+    linear-gradient(135deg, transparent 0%, transparent 50%, rgba(0, 212, 170, 0.015) 100%);
+}
+[data-shell="hud"] .main-content::before,
+[data-shell="hud"] .main-content::after {
+  content: "";
+  position: absolute;
+  width: 12px; height: 12px;
+  border: 1px solid var(--bull);
+  pointer-events: none;
+}
+[data-shell="hud"] .main-content::before {
+  top: -1px; right: -1px;
+  border-left: none; border-bottom: none;
+}
+[data-shell="hud"] .main-content::after {
+  bottom: -1px; left: -1px;
+  border-right: none; border-top: none;
+}
+
+/* Scanning line animation */
+[data-shell="hud"] .main-content > .container {
+  position: relative;
+}
+[data-shell="hud"] .main-content > .container::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--bull) 50%, transparent 100%);
+  opacity: 0.4;
+  animation: hud-scan 6s linear infinite;
+  pointer-events: none;
+}
+@keyframes hud-scan {
+  0%   { transform: translateY(0); opacity: 0; }
+  10%  { opacity: 0.5; }
+  90%  { opacity: 0.5; }
+  100% { transform: translateY(calc(100vh - 80px)); opacity: 0; }
+}

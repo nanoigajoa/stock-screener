@@ -4,7 +4,7 @@ from config import (
 )
 
 _ALL_CHECKS = ["ma_alignment", "rsi", "volume", "macd", "support", "bollinger", "trend"]
-_WEIGHTS = {"ma_alignment": 2, "rsi": 2, "volume": 1, "macd": 1, "support": 1, "bollinger": 1, "trend": 1}
+_WEIGHTS = {"ma_alignment": 1, "rsi": 1, "volume": 1, "macd": 1, "support": 1, "bollinger": 1, "trend": 1}
 
 
 def score_ticker(
@@ -33,29 +33,29 @@ def score_ticker(
 
     items = {}
 
-    # 1. MA 정배열 (weight 2) — 완전 정배열 2점, 단기 정배열 1점, 미충족 0점
+    # 1. MA 정배열 — 완전 정배열만 통과
     p, m5, m20, m60, m120 = ind["price"], ind["ma5"], ind["ma20"], ind["ma60"], ind["ma120"]
     ma_vals_ok = all(v is not None for v in [m5, m20, m60, m120])
 
     if ma_vals_ok and p > m5 > m20 > m60 > m120:
-        ma_score, ma_pass = 2, True                          # 완전 골든크로스
+        ma_pass = True
         ma_detail = f"완전 정배열: {p:.2f} > {m5:.2f} > {m20:.2f} > {m60:.2f} > {m120:.2f}"
     elif ma_vals_ok and p > m5 > m20:
-        ma_score, ma_pass = 1, False                         # 단기만 정배열 (⚠️ 부분점수)
+        ma_pass = False
         ma_detail = f"단기 정배열만: {p:.2f} > {m5:.2f} > {m20:.2f} (60/120MA 미충족)"
     else:
-        ma_score, ma_pass = 0, False                         # 정배열 붕괴
+        ma_pass = False
         ma_detail = "정배열 미충족" if ma_vals_ok else "MA 데이터 부족"
 
     items["ma_alignment"] = {
         "name": "이동평균선 정배열",
         "pass": ma_pass,
-        "score": ma_score,    # 0~2 가변 점수
-        "weight": 2,
+        "score": 1 if ma_pass else 0,
+        "weight": 1,
         "detail": ma_detail,
     }
 
-    # 2. RSI (weight 2)
+    # 2. RSI
     rsi_ok = rsi_min <= rsi <= rsi_max
     if rsi_ok:
         rsi_detail = f"RSI {rsi:.1f} (이상적 구간 {rsi_min}~{rsi_max})"
@@ -63,7 +63,7 @@ def score_ticker(
         rsi_detail = f"RSI {rsi:.1f} (과매도 구간)"
     else:
         rsi_detail = f"RSI {rsi:.1f} (주의 구간)"
-    items["rsi"] = {"name": "RSI(14)", "pass": rsi_ok, "score": 2 if rsi_ok else 0, "weight": 2, "detail": rsi_detail}
+    items["rsi"] = {"name": "RSI(14)", "pass": rsi_ok, "score": 1 if rsi_ok else 0, "weight": 1, "detail": rsi_detail}
 
     # 3. 거래량 — 상대 거래량 + 절대 거래량 이중 조건 (Task 3)
     vol_ma = ind["vol_ma20"]
@@ -88,10 +88,10 @@ def score_ticker(
         "detail": vol_detail,
     }
 
-    # 4. MACD 골든크로스 (weight 1)
+    # 4. MACD 골든크로스
     macd_ok = (
         ind["macd"] is not None and ind["macd_signal"] is not None and
-        ind["macd"] > ind["macd_signal"] and ind["macd_hist"] > 0
+        ind["macd"] > ind["macd_signal"]
     )
     items["macd"] = {
         "name": "MACD",
@@ -101,14 +101,25 @@ def score_ticker(
         "detail": f"MACD {ind['macd']:.3f} / Signal {ind['macd_signal']:.3f}" if ind["macd"] else "데이터 없음",
     }
 
-    # 5. 지지선 위 반등 (weight 1)
-    support_ok = ind["support"] > 0 and ind["price"] > ind["support"] * 1.02
+    # 5. 동적 지지선 (MA60) — 중기 이평선 위 0~8% 이내 눌림목 타점
+    ma60 = ind.get("ma60")
+    if ma60 and ma60 > 0:
+        support_ok = ma60 <= p <= ma60 * 1.08
+        pct = (p / ma60 - 1) * 100
+        detail = (
+            f"MA60 지지 ${ma60:.2f} 근방 +{pct:.1f}%"
+            if support_ok else
+            f"MA60 ${ma60:.2f} 대비 {pct:+.1f}% (범위 초과)"
+        )
+    else:
+        support_ok = False
+        detail = "MA60 데이터 없음"
     items["support"] = {
         "name": "지지/저항",
         "pass": support_ok,
         "score": 1 if support_ok else 0,
         "weight": 1,
-        "detail": f"지지선 ${ind['support']:.2f} 위 반등" if support_ok else f"지지선 ${ind['support']:.2f} 근접",
+        "detail": detail,
     }
 
     # 6. 볼린저밴드 중간선 위 (weight 1)

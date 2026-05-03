@@ -6,10 +6,13 @@ numpy>=1.24.0,<2.3.0
 schedule>=1.2.0
 colorama>=0.4.6
 requests>=2.31.0
+diskcache>=5.6.0
 
 # 웹앱
 fastapi>=0.109.0
-uvicorn>=0.24.0
+uvicorn[standard]>=0.24.0
+httpx>=0.25.0
+watchfiles>=1.0.0
 jinja2>=3.1.0
 python-dotenv>=1.0.0
 
@@ -17,7 +20,11 @@ python-dotenv>=1.0.0
 pytrends>=4.9.0
 quiverquant>=0.1.0
 sec-edgar-downloader>=0.18.0
-# fredapi 제거 — macro_fetcher.py가 requests로 FRED REST API 직접 호출
+# macro_fetcher.py는 requests로 FRED REST API 직접 호출 (fredapi 미사용)
 
-# 캔들 패턴
+# 캔들 패턴 — signal_scorer.py에서 lazy import (실패 시 자동 스킵)
 git+https://github.com/zhirodadkhah/CandleKit.git@v1.0.1
+
+# Testing & Indicators
+pandas-ta>=0.3.14b0
+pytest>=8.0.0

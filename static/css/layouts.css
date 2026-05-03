@@ -1,0 +1,259 @@
+/* ============================================================
+   StockScope — Layout Variants
+   Apply via <html data-layout="heatmap"> or "stack"
+   These restructure card layouts; theme/density still apply.
+   ============================================================ */
+
+/* ─────────────────────────────────────────────────────────
+   LAYOUT: HEATMAP GRID
+   다수의 종목을 한눈에 · 시장 히트맵 스타일
+   ───────────────────────────────────────────────────────── */
+[data-layout="heatmap"] .signal-results,
+[data-layout="heatmap"] .result-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px;
+}
+[data-layout="heatmap"] .summary { grid-column: 1 / -1; }
+
+/* Common card shell — flat tile */
+[data-layout="heatmap"] .signal-card,
+[data-layout="heatmap"] .stock-card {
+  display: block;                       /* override the grid layout */
+  padding: 0;
+  gap: 0;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: var(--t);
+}
+[data-layout="heatmap"] .signal-card:hover,
+[data-layout="heatmap"] .stock-card:hover {
+  transform: scale(1.04);
+  z-index: 2;
+}
+
+/* Top tinted strip = grade indicator */
+[data-layout="heatmap"] .signal-card::before,
+[data-layout="heatmap"] .stock-card::before {
+  height: 3px;
+  width: 100%;
+  top: 0; left: 0; right: 0; bottom: auto;
+}
+
+/* Grade fills the entire tile background subtly */
+[data-layout="heatmap"] .signal-card.sig-strong-buy { background: rgba(0, 212, 170, 0.10); border-color: rgba(0, 212, 170, 0.35); }
+[data-layout="heatmap"] .signal-card.sig-buy        { background: rgba(0, 212, 170, 0.04); border-color: rgba(0, 212, 170, 0.18); }
+[data-layout="heatmap"] .signal-card.sig-watch      { background: rgba(246, 201, 14, 0.06); border-color: rgba(246, 201, 14, 0.22); }
+[data-layout="heatmap"] .stock-card.grade-s         { background: rgba(0, 212, 170, 0.10); border-color: rgba(0, 212, 170, 0.35); }
+[data-layout="heatmap"] .stock-card.grade-a         { background: rgba(246, 201, 14, 0.06); border-color: rgba(246, 201, 14, 0.22); }
+
+/* Hide complex children, build a tile-style body */
+[data-layout="heatmap"] .signal-card .sc-rank        { display: none; }
+[data-layout="heatmap"] .signal-card .sc-cats        { display: none; }
+[data-layout="heatmap"] .signal-card .sc-footer      { display: none; }
+[data-layout="heatmap"] .signal-card .sc-meta        { padding: 0 12px; }
+[data-layout="heatmap"] .signal-card .sc-grade-badge { font-size: 9px; padding: 1px 6px; }
+[data-layout="heatmap"] .signal-card .sc-score       { font-size: 9px; }
+
+[data-layout="heatmap"] .signal-card .sc-header {
+  display: block;
+  padding: 14px 12px 4px;
+}
+[data-layout="heatmap"] .signal-card .sc-ticker { font-size: 18px; }
+[data-layout="heatmap"] .signal-card .short-name { font-size: 10px; max-width: 100%; }
+
+[data-layout="heatmap"] .signal-card .sc-price-zone {
+  align-items: flex-start;
+  text-align: left;
+  padding: 6px 12px 14px;
+}
+[data-layout="heatmap"] .signal-card .sc-price { font-size: 16px; }
+[data-layout="heatmap"] .signal-card .sig-zone .lbl { display: none; }
+
+/* Stock card → tile */
+[data-layout="heatmap"] .stock-card .grade-tile     { display: none; }
+[data-layout="heatmap"] .stock-card .checklist      {
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  padding: 0 12px 10px;
+}
+[data-layout="heatmap"] .stock-card .check {
+  padding: 4px 0;
+  font-size: 0;                       /* hide labels in tile mode */
+  border-radius: 2px;
+}
+[data-layout="heatmap"] .stock-card .check .icon { width: 9px; height: 9px; font-size: 8px; }
+[data-layout="heatmap"] .stock-card .sc-ticker-block { padding: 14px 12px 6px; }
+[data-layout="heatmap"] .stock-card .ticker          { font-size: 17px; }
+[data-layout="heatmap"] .stock-card .meta-line       { display: none; }
+[data-layout="heatmap"] .stock-card .target-info {
+  grid-template-columns: 1fr 1fr;
+  border: none;
+  background: transparent;
+  padding: 0 12px 8px;
+  gap: 6px;
+}
+[data-layout="heatmap"] .stock-card .ti-item {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 6px;
+}
+[data-layout="heatmap"] .stock-card .ti-item:nth-child(2) { display: none; }   /* hide "now" — already in price */
+[data-layout="heatmap"] .stock-card .ti-label { font-size: 8px; }
+[data-layout="heatmap"] .stock-card .ti-val   { font-size: 11px; }
+[data-layout="heatmap"] .stock-card .card-actions {
+  padding: 0 12px 12px;
+  justify-content: flex-end;
+}
+[data-layout="heatmap"] .stock-card .chart-btn { padding: 4px 10px; font-size: 10px; }
+[data-layout="heatmap"] .stock-card .watchlist-btn { width: 24px; height: 24px; }
+
+
+/* ─────────────────────────────────────────────────────────
+   LAYOUT: STACK DETAIL
+   하나의 카드 = 미니 대시보드 · 차트 + 데이터 그리드
+   ───────────────────────────────────────────────────────── */
+[data-layout="stack"] .signal-results,
+[data-layout="stack"] .result-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 14px;
+}
+[data-layout="stack"] .summary { grid-column: 1 / -1; }
+
+/* Reset the grid card to a stacked block */
+[data-layout="stack"] .signal-card,
+[data-layout="stack"] .stock-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+[data-layout="stack"] .signal-card::before,
+[data-layout="stack"] .stock-card::before {
+  width: 100%;
+  height: 3px;
+  top: 0; left: 0; bottom: auto;
+}
+
+/* HEAD STRIP — ticker + price + grade tag */
+[data-layout="stack"] .signal-card .sc-rank {
+  position: absolute;
+  top: 12px; right: 14px;
+  width: auto;
+  font-size: 10px;
+  text-align: right;
+  opacity: 0.6;
+}
+[data-layout="stack"] .signal-card .sc-header {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 4px;
+  width: 100%;
+}
+[data-layout="stack"] .signal-card .sc-ticker { font-size: 22px; line-height: 1; }
+[data-layout="stack"] .signal-card .short-name { font-size: 11px; max-width: none; }
+
+[data-layout="stack"] .signal-card .sc-meta {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 10px;
+  width: 100%;
+}
+[data-layout="stack"] .signal-card .sc-grade-badge { font-size: 10px; }
+
+/* SPARKLINE — synthetic via gradient bar; replace with real chart in production */
+[data-layout="stack"] .signal-card::after,
+[data-layout="stack"] .stock-card::after {
+  content: "";
+  display: block;
+  height: 56px;
+  margin: 0 14px 12px;
+  background:
+    linear-gradient(to top, rgba(0,212,170,0.18), transparent 70%),
+    repeating-linear-gradient(90deg,
+      transparent 0 23%,
+      rgba(255,255,255,0.04) 23% 24%);
+  border-bottom: 1.5px solid var(--bull);
+  border-radius: 3px;
+  position: relative;
+}
+[data-layout="stack"] .signal-card.sig-watch::after  { border-bottom-color: var(--watch); background: linear-gradient(to top, rgba(246,201,14,0.18), transparent 70%); }
+[data-layout="stack"] .signal-card.sig-sell::after,
+[data-layout="stack"] .stock-card.grade-skip::after { border-bottom-color: var(--bear); background: linear-gradient(to top, rgba(255,77,109,0.18), transparent 70%); }
+[data-layout="stack"] .stock-card.grade-a::after    { border-bottom-color: var(--watch); background: linear-gradient(to top, rgba(246,201,14,0.18), transparent 70%); }
+[data-layout="stack"] .stock-card.grade-b::after    { border-bottom-color: var(--text-muted); background: linear-gradient(to top, rgba(140,152,180,0.16), transparent 70%); }
+
+/* PRICE ROW — big price + change, full width */
+[data-layout="stack"] .signal-card .sc-price-zone {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px 10px;
+  width: 100%;
+  text-align: left;
+}
+[data-layout="stack"] .signal-card .sc-price  { font-size: 24px; line-height: 1; }
+[data-layout="stack"] .signal-card .sc-change { font-size: 13px; }
+[data-layout="stack"] .signal-card .sig-zone  { margin: 0; font-size: 10px; }
+
+/* CATEGORY GRID — 2x2 instead of 4 columns */
+[data-layout="stack"] .signal-card .sc-cats {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(255,255,255,0.015);
+}
+
+/* FOOTER — actions full width */
+[data-layout="stack"] .signal-card .sc-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border);
+  margin-left: 0;
+}
+[data-layout="stack"] .signal-card .chart-btn { flex: 1; justify-content: center; }
+
+/* STOCK CARD — same treatment */
+[data-layout="stack"] .stock-card .grade-tile {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 38px; height: 38px;
+}
+[data-layout="stack"] .stock-card .grade-tile .gt-letter { font-size: 16px; }
+[data-layout="stack"] .stock-card .grade-tile .gt-score  { font-size: 8px; }
+
+[data-layout="stack"] .stock-card .sc-ticker-block { padding: 14px 64px 10px 16px; width: 100%; }
+[data-layout="stack"] .stock-card .ticker { font-size: 22px; }
+[data-layout="stack"] .stock-card .meta-line { font-size: 10px; }
+
+[data-layout="stack"] .stock-card .checklist {
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  padding: 0 16px 12px;
+}
+[data-layout="stack"] .stock-card .check { padding: 5px 2px; font-size: 8px; }
+
+[data-layout="stack"] .stock-card .target-info {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+[data-layout="stack"] .stock-card .card-actions {
+  padding: 12px 16px;
+  justify-content: space-between;
+}
+[data-layout="stack"] .stock-card .chart-btn { flex: 1; }

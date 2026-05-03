@@ -1,118 +1,54 @@
 """
-백그라운드 배치 스케줄러.
-FastAPI startup에서 호출 → 데몬 스레드로 24h 주기 실행.
+백그라운드 배치 스케줄러 (FastAPI Native 버젼)
 """
-import sys
-import threading
+import asyncio
 import time
 import logging
 
 logger = logging.getLogger(__name__)
 
-# 각 태스크 예상 소요 시간 (초)
-_ESTIMATES = {
-    "매크로(FRED)": 8,
-    "공포탐욕지수": 15,
-}
+async def start_background_scheduler() -> asyncio.Task:
+    """FastAPI lifespan 시작 시 호출. Task 객체를 반환해 종료 시 취소 가능하게 함."""
+    logger.info("[Scheduler] 비동기 배치 스케줄러 엔진 가동")
+    return asyncio.create_task(_loop())
 
-_BAR_WIDTH = 22
-
-
-def start() -> None:
-    """앱 시작 시 1회 호출. 즉시 첫 배치 실행 후 24h 주기 반복."""
-    t = threading.Thread(target=_loop, daemon=True, name="batch-scheduler")
-    t.start()
-    logger.info("[Scheduler] 배치 스케줄러 시작")
-
-
-def _loop() -> None:
-    _run_all()
-    while True:
-        time.sleep(86400)  # 24h
-        _run_all()
-
-
-def _run_all() -> None:
-    total_est = sum(_ESTIMATES.values())
-    _print(f"")
-    _print(f"┌{'─' * 44}┐")
-    _print(f"│  📦 배치 데이터 로드 시작  (예상 {total_est}초)          │")
-    _print(f"└{'─' * 44}┘")
-
-    batch_start = time.perf_counter()
-    _safe_run("매크로(FRED)", _refresh_macro)
-    _safe_run("공포탐욕지수", _refresh_fear_greed)
-    elapsed = time.perf_counter() - batch_start
-
-    _print(f"")
-    _print(f"✅ 배치 완료 — 총 {elapsed:.1f}초 (예상 {total_est}초)")
-    _print(f"")
-
-
-def _safe_run(name: str, fn) -> None:
-    est = _ESTIMATES.get(name, 10)
-    _print(f"")
-    _print(f"  ▶ [{name}]  예상 ~{est}초")
-
-    stop_evt = threading.Event()
-    prog_thread = threading.Thread(
-        target=_progress_loop,
-        args=(name, est, stop_evt),
-        daemon=True,
-    )
-    prog_thread.start()
-
-    t0 = time.perf_counter()
-    error = None
+async def _loop() -> None:
+    """24시간 주기로 _run_all을 비동기 실행. CancelledError로 graceful shutdown."""
     try:
-        fn()
+        while True:
+            await _run_all()
+            await asyncio.sleep(86400)
+    except asyncio.CancelledError:
+        logger.info("[Scheduler] 스케줄러 루프가 종료 신호를 받고 멈춥니다.")
+        raise
+
+async def _run_all() -> None:
+    logger.info("=" * 50)
+    logger.info("📦 [배치] 데이터 로드 파이프라인 시작")
+
+    start_time = time.perf_counter()
+
+    try:
+        await asyncio.to_thread(_refresh_macro)
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"✔ [매크로(FRED)] 수집 완료 ({elapsed:.1f}초)")
     except Exception as e:
-        error = e
-    finally:
-        elapsed = time.perf_counter() - t0
-        stop_evt.set()
-        prog_thread.join()
+        elapsed = time.perf_counter() - start_time
+        logger.error(f"✗ [매크로(FRED)] 수집 실패 ({elapsed:.1f}초): {e}")
 
-    # 게이지 라인 지우고 최종 결과 출력
-    _clear_line()
-    if error:
-        _print(f"  ✗ [{name}]  실패 {elapsed:.1f}s — {error}")
-        logger.error(f"[Scheduler] [{name}] 실패 ({elapsed:.1f}초): {error}")
-    else:
-        bar = "█" * _BAR_WIDTH
-        _print(f"  ✔ [{name}]  {bar}  {elapsed:.1f}s / ~{est}s (완료)")
-        logger.info(f"[Scheduler] [{name}] 완료 ({elapsed:.1f}초)")
+    try:
+        t = time.perf_counter()
+        await asyncio.to_thread(_refresh_sidebar)
+        logger.info(f"✔ [사이드바 Live] 수집 완료 ({time.perf_counter()-t:.1f}초)")
+    except Exception as e:
+        logger.error(f"✗ [사이드바 Live] 수집 실패: {e}")
 
-
-def _progress_loop(name: str, est: float, stop: threading.Event) -> None:
-    """0.25초마다 같은 줄을 \r로 덮어써서 실시간 게이지 표시."""
-    start = time.perf_counter()
-    while not stop.is_set():
-        elapsed = time.perf_counter() - start
-        ratio = min(elapsed / est, 1.0)
-        filled = int(_BAR_WIDTH * ratio)
-        bar = "█" * filled + "░" * (_BAR_WIDTH - filled)
-        pct = int(ratio * 100)
-        line = f"  ○ [{name}]  {bar}  {elapsed:.1f}s / ~{est}s  ({pct}%)"
-        sys.stdout.write(f"\r{line}   ")
-        sys.stdout.flush()
-        stop.wait(0.25)
-
-
-def _clear_line() -> None:
-    sys.stdout.write("\r" + " " * 72 + "\r")
-    sys.stdout.flush()
-
-
-def _print(msg: str) -> None:
-    print(msg, flush=True)
-
+    logger.info("=" * 50)
 
 def _refresh_macro() -> None:
     from screener.macro_fetcher import refresh_macro
     refresh_macro()
 
-
-def _refresh_fear_greed() -> None:
-    from screener.fear_greed_fetcher import get_fear_greed
-    get_fear_greed()
+def _refresh_sidebar() -> None:
+    from screener.macro_fetcher import refresh_sidebar
+    refresh_sidebar()

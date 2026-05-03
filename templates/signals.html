@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}시그널 — StockScope{% endblock %}
+{% block container_attrs %}data-screen-label="01 Signals"{% endblock %}
+
+{% block content %}
+<h1 class="page-title">매매 시그널</h1>
+<p class="page-subtitle">실시간 매수신호 랭킹 보드 · <span id="signal-count">...</span>개 분석 완료 · 30초 전 갱신</p>
+
+<!-- Watchlist Panel -->
+<div class="watchlist-panel">
+  <span class="watchlist-label">Watchlist</span>
+  <div class="watchlist-tags" id="watchlist-tags">
+    {% for ticker in watchlist %}
+    <span class="wl-tag" data-ticker="{{ ticker }}">
+      {{ ticker }}
+      <button class="wl-remove" data-ticker="{{ ticker }}" aria-label="삭제">×</button>
+    </span>
+    {% endfor %}
+  </div>
+  <div class="watchlist-add">
+    <input type="text" id="wl-input" placeholder="ADD TICKER" autocomplete="off" spellcheck="false">
+    <button id="wl-add-btn">＋ ADD</button>
+    <button id="wl-refresh-btn" title="Re-analyze">↻ ANALYZE</button>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="sig-filter-bar">
+  <button class="pill is-active" data-filter="all">ALL</button>
+  <button class="pill tone-bull" data-filter="STRONG BUY">⚡ STRONG BUY</button>
+  <button class="pill tone-bull" data-filter="BUY">▲ BUY</button>
+  <button class="pill tone-watch" data-filter="WATCH">◎ WATCH</button>
+  <span class="meta">SORTED BY SCORE · DESC</span>
+</div>
+
+<!-- 결과 영역 -->
+<div id="signal-result-area" class="signal-results">
+  <div class="polling">
+    <p class="status-text">⏳ 시그널 분석 중...</p>
+  </div>
+</div>
+
+<!-- 차트 모달 -->
+<div id="chart-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span id="modal-ticker" class="modal-ticker-name"></span>
+      </div>
+      <button id="modal-close" aria-label="닫기">✕</button>
+    </div>
+    <div id="modal-stock-info" class="modal-stock-info"></div>
+    <div id="lw-chart-container"></div>
+    <div id="marker-tooltip" class="marker-tooltip"></div>
+    <div class="modal-period-bar">
+      <button class="period-btn" data-period="1mo">1M</button>
+      <button class="period-btn" data-period="3mo">3M</button>
+      <button class="period-btn is-active" data-period="6mo">6M</button>
+      <button class="period-btn" data-period="1y">1Y</button>
+      <button class="period-btn" data-period="3y">3Y</button>
+      <button class="period-btn" data-period="5y">5Y</button>
+    </div>
+    <div id="modal-detail"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="/static/js/signals.js?v=9"></script>{% endblock %}

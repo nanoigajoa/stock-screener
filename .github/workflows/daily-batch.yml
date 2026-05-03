@@ -42,14 +42,6 @@ jobs:
             && echo "Macro refresh triggered." \
             || echo "Macro refresh endpoint not available (server will refresh on next request)."
 
-      - name: Trigger fear-greed refresh
-        run: |
-          curl -sf --max-time 30 \
-            "${{ secrets.RENDER_URL }}/api/refresh/fear-greed" \
-            -H "X-Refresh-Token: ${{ secrets.REFRESH_TOKEN }}" \
-            && echo "Fear-greed refresh triggered." \
-            || echo "Fear-greed refresh endpoint not available."
-
       - name: Verify server health
         run: |
           status=$(curl -s -o /dev/null -w "%{http_code}" \
