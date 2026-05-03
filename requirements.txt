@@ -22,9 +22,6 @@ quiverquant>=0.1.0
 sec-edgar-downloader>=0.18.0
 # macro_fetcher.py는 requests로 FRED REST API 직접 호출 (fredapi 미사용)
 
-# 캔들 패턴 — signal_scorer.py에서 lazy import (실패 시 자동 스킵)
-git+https://github.com/zhirodadkhah/CandleKit.git@v1.0.1
-
 # Testing & Indicators
 pandas-ta>=0.3.14b0
 pytest>=8.0.0
