@@ -1,152 +1,210 @@
 # StockScope
 
-미국 주식 분석 시스템. **스크리닝 서비스** (종목 발굴)와 **매매시그널 서비스** (진입 타이밍)를 독립 운영.
+미국 주식 **기술적 분석 스크리닝** + **매매 진입 타이밍 시그널** 웹 서비스.  
+두 서비스가 완전 독립으로 동작하며 Watchlist로 연동된다.
+
+---
+
+## 서비스 구성
+
+| 서비스 | URL | 핵심 질문 |
+|--------|-----|---------|
+| 스크리닝 | `/screen` | 이 종목이 기술적으로 건강한가? |
+| 매매시그널 | `/signals` | 지금 진입 타이밍인가? |
+| 통합 탐색 | `/explore` | 종목의 체력과 타이밍을 동시에 보려면? |
+| About | `/about` | 시스템 설명 |
+
+---
 
 ## 주요 기능
 
-### 스크리닝 서비스 `/screen`
+### 스크리닝 `/screen`
 - **Finviz 사전 필터** — 거래량·RSI·이평선·EPS 조건으로 유니버스 압축
-- **7개 기술적 체크리스트** — MA 정배열, RSI, MACD, 볼린저밴드, 거래량, 지지선, 추세
-- **S/A/B/SKIP 등급** — 비율 기반 자동 분류 + 목표가·손절 계산
-- **펀더멘털 배지** — 실적발표 D-N, 숏비율, 애널리스트 목표가, 내부자 매수
+- **7개 기술적 체크리스트** — MA 정배열, RSI, MACD, 볼린저밴드, 거래량, 지지선, 추세 지속성
+- **S / A / B / SKIP 등급** — 비율 기반 자동 분류, 목표가(+8%/+15%) · 손절(-7%) 자동 계산
+- **펀더멘털 배지** — 실적발표 D-N, 숏비율, 애널리스트 목표가, 내부자 매수 여부
 - **외부 시그널** — Google Trends 관심도, 의원 거래 내역
-- **매크로 배너** — FRED API: 기준금리·CPI·실업률·장단기 금리차·VIX
-- **★ Watchlist 추가** — 카드에서 직접 매매시그널 서비스로 연동
+- **사이드바 라이브** — SPY · VIX · 공포탐욕지수 (15분 캐시), FRED 매크로 (7일 캐시)
 
-### 매매시그널 서비스 `/signals`
-- **관심종목 관리** — Watchlist 태그 추가/삭제, 서버 영구 저장
-- **4카테고리 시그널 채점** — Trend 35% / Momentum 25% / Volume 25% / Pattern 15%
-- **STRONG BUY / BUY / WATCH / NO SIGNAL** — 진입가 밴드 + 손절가 표시
-- **페이지 접속 시 자동 분석** — SSE 실시간 스트리밍
+### 매매시그널 `/signals`
+- **4카테고리 가중 채점** — Trend 35% / Momentum 25% / Volume 25% / Pattern 15%
+- **STRONG BUY / BUY / WATCH / NO SIGNAL** 4등급, 진입가 밴드 + 손절가 표시
+- **관심종목 관리** — Watchlist 추가/삭제, 서버 영구 저장 (`data/watchlist.json`)
+- **SSE 실시간 스트리밍** — 분석 진행 상황 즉시 반영, 120초 타임아웃
 
-### 공통
-- **Lightweight Charts 모달** — 캔들스틱 + MA20 + 매수/매도 마커 (lazy 렌더링)
-- **SSE 실시간 스트리밍** — 분석 진행 상황 즉시 반영
+### 캔들 차트 모달
+- **Lightweight Charts 4.2** — OHLCV 캔들스틱 + MA20
+- **매수 마커 5종** — MA5골든 / RSI+볼륨 / RSI반등 / MACD전환 / 볼륨급증
+- **매도 마커 3종** — 데드크로스 / RSI과열이탈 / MA20붕괴
+
+---
 
 ## Tech Stack
 
 | 레이어 | 기술 |
 |--------|------|
-| 웹 프레임워크 | FastAPI + Jinja2 + SSE |
-| 데이터 | yfinance, finviz, pytrends, quiverquant, sec-edgar-downloader |
-| 매크로 | FRED REST API (requests 직접 호출) |
-| 스케줄링 | GitHub Actions (keepalive + daily batch) |
+| 백엔드 | FastAPI + Jinja2 + SSE, Python 3.12 |
+| 데이터 | yfinance · finviz · pytrends · quiverquant |
+| 외부 API | FRED REST API (매크로), Yahoo Finance Search (티커 자동완성) |
+| 캐시 | diskcache (TTL별 다단계) |
+| 프론트엔드 | Vanilla JS · TomSelect · Lightweight Charts 4.2 |
 | 배포 | Render (free plan) |
-| 프론트엔드 | Vanilla JS + TomSelect + Lightweight Charts 4.2 |
+| 스케줄 | GitHub Actions (keepalive + daily batch) |
+
+---
 
 ## 로컬 실행
 
 ```bash
-# 의존성 설치
+# 1. 의존성 설치
 pip install -r requirements.txt
 
-# 환경 변수 설정 (.env 파일 또는 export)
+# 2. 환경 변수 (.env 파일 생성)
 FRED_API_KEY=your_fred_api_key          # fred.stlouisfed.org 무료 발급
 QUIVERQUANT_API_KEY=your_qq_api_key     # quiverquant.com 무료 tier
-REFRESH_TOKEN=your_secret_token         # 임의 생성: python3 -c "import secrets; print(secrets.token_hex(32))"
+REFRESH_TOKEN=your_secret_token         # 임의 생성 예시:
+                                        # python3 -c "import secrets; print(secrets.token_hex(32))"
 
-# 서버 실행
+# 3. 서버 실행
 ./run.sh
+# 또는 직접 실행:
+uvicorn api.main:app --reload --port 8000
 ```
 
-브라우저에서 `http://localhost:8000` 접속.
+`http://localhost:8000` 접속 → `/signals` 자동 리다이렉트.
+
+---
 
 ## 환경 변수
 
 | 변수 | 필수 | 설명 |
-|------|------|------|
-| `FRED_API_KEY` | 필수 | FRED 매크로 데이터 ([무료 발급](https://fred.stlouisfed.org/docs/api/api_key.html)) |
-| `QUIVERQUANT_API_KEY` | 필수 | 의원 거래 데이터 ([무료 tier](https://www.quiverquant.com)) |
-| `REFRESH_TOKEN` | 배포 시 필수 | GitHub Actions → Render 배치 refresh 인증 토큰 |
-| `RENDER_URL` | GitHub Secrets | Render 배포 URL (keepalive, daily-batch 워크플로우에서 사용) |
+|------|:----:|------|
+| `FRED_API_KEY` | 권장 | FRED 매크로 데이터. 없으면 사이드바 매크로 배너 숨김 |
+| `QUIVERQUANT_API_KEY` | 선택 | 의원 거래 데이터. 없으면 해당 배지 스킵 |
+| `REFRESH_TOKEN` | 배포 필수 | GitHub Actions → Render 배치 refresh 인증 |
+| `RENDER_URL` | 배포 필수 | GitHub Actions keepalive · daily-batch 워크플로우에서 사용 |
+
+---
 
 ## 프로젝트 구조
 
 ```
 fin_auto/
 ├── api/
-│   ├── main.py                 # FastAPI 앱, startup 훅, refresh 엔드포인트
+│   ├── main.py                 # FastAPI 앱, lifespan, refresh 엔드포인트
+│   ├── deps.py                 # Jinja2 templates 싱글턴 + 필터 등록
 │   └── routes/
-│       ├── screen.py           # SSE 스트리밍, compact 카드 렌더링
-│       ├── tickers.py          # 티커 자동완성
-│       └── chart.py            # /api/chart-data/{ticker} — LW Charts용 OHLCV+마커
-├── screener/
-│   ├── finviz_filter.py        # Finviz 사전 필터
-│   ├── data_fetcher.py         # yfinance OHLCV + 분봉 수집 + 캐시
-│   ├── indicators.py           # MA/RSI/MACD/BB + ATR/StochRSI/OBV/거래대금 계산
-│   ├── checklist.py            # 7개 항목 채점
-│   ├── grader.py               # S/A/B/SKIP 비율 기반 등급 분류
-│   ├── signal_scorer.py        # 4카테고리 매매시그널 채점
-│   ├── watchlist_store.py      # Watchlist JSON 저장/로드
-│   ├── fundamental_fetcher.py  # yfinance 펀더멘털 (실적/숏/목표가/내부자)
-│   ├── trends_fetcher.py       # Google Trends 관심도
-│   ├── congress_fetcher.py     # 의원 거래 내역 (quiverquant)
-│   ├── insider_fetcher.py      # SEC Form 4 내부자 거래
-│   ├── macro_fetcher.py        # FRED 매크로 지표
-│   └── batch_scheduler.py      # 서버 시작 시 배치 + 진행 게이지
+│       ├── screen.py           # /screen, /stream/screen SSE
+│       ├── signals.py          # /signals, /stream/signals SSE
+│       ├── explore.py          # /explore, /stream/explore SSE
+│       ├── watchlist.py        # /api/watchlist CRUD
+│       ├── chart.py            # /api/chart-data/{ticker}
+│       └── tickers.py          # /api/tickers 자동완성
 ├── services/
-│   ├── screener_service.py     # run_analysis() — 스크리닝 오케스트레이터
-│   └── signal_service.py       # run_signal_analysis() — 시그널 오케스트레이터
+│   ├── screener_service.py     # run_analysis() — 스크리닝 파이프라인
+│   ├── signal_service.py       # run_signal_analysis() — 시그널 파이프라인
+│   └── explore_service.py      # run_explore_analysis() — 통합 파이프라인
+├── screener/
+│   ├── data_fetcher.py         # OHLCV 일봉·분봉 수집, TTL 캐시
+│   ├── indicators.py           # 기술적 지표 계산 (MA/RSI/MACD/BB/ATR/StochRSI/OBV/CMF)
+│   ├── checklist.py            # 7개 체크리스트 채점, RSI 하드게이트
+│   ├── grader.py               # S/A/B/SKIP 비율 기반 등급
+│   ├── signal_scorer.py        # 4카테고리 가중 시그널 채점
+│   ├── buy_signal.py           # 매수 마커 생성 (5종 이유)
+│   ├── sell_signal.py          # 매도 마커 생성 (3종 이유)
+│   ├── finviz_filter.py        # Finviz 사전 필터
+│   ├── cache_manager.py        # diskcache 중앙 관리
+│   ├── watchlist_store.py      # Watchlist JSON CRUD
+│   ├── fundamental_fetcher.py  # 펀더멘털 (실적일/숏비율/목표가)
+│   ├── macro_fetcher.py        # FRED + yfinance 사이드바 라이브 데이터
+│   ├── fear_greed_fetcher.py   # CNN 공포탐욕지수
+│   ├── trends_fetcher.py       # Google Trends
+│   ├── congress_fetcher.py     # 의원 거래 내역
+│   ├── insider_fetcher.py      # SEC Form 4 내부자 거래
+│   ├── news_filter.py          # 뉴스 위험 키워드 필터
+│   ├── nl_generator.py         # 기술적 지표 기반 자연어 브리핑
+│   └── batch_scheduler.py      # 서버 시작 시 백그라운드 배치
+├── templates/
+│   ├── base.html               # 사이드바 + 매크로 레이아웃
+│   ├── screen.html             # 스크리닝 대시보드
+│   ├── signals.html            # 매매시그널 대시보드
+│   ├── explore.html            # 통합 탐색 페이지
+│   ├── about.html              # 시스템 설명
+│   └── partials/
+│       ├── screen_cards.html   # 스크리닝 결과 카드 (Jinja2 partial)
+│       └── signal_cards.html   # 시그널 결과 카드 (Jinja2 partial)
+├── static/
+│   ├── css/                    # base · screen · signals · explore · about + layout 분리
+│   └── js/                     # screen.js · signals.js · explore.js
 ├── data/
 │   └── watchlist.json          # Watchlist 영구 저장 (git 제외)
-├── static/
-│   ├── css/                    # base.css / screen.css / signals.css / about.css
-│   └── js/                     # screen.js / signals.js
-├── templates/
-│   ├── base.html               # 네비게이션 포함 베이스 레이아웃
-│   ├── about.html              # About 페이지 (기본 진입)
-│   ├── screen.html             # 스크리닝 대시보드
-│   └── signals.html            # 매매시그널 대시보드
+├── docs/
+│   ├── design_doc.md           # 전체 시스템 설계
+│   ├── architecture.md         # 아키텍처 + API 목록
+│   ├── signal-scoring-logic.md # 시그널 스코어링 수식 레퍼런스
+│   ├── changelog.md
+│   └── adr/                    # 의사결정 기록 ADR-001 ~ 019
+├── tests/
 ├── .github/workflows/
-│   ├── keepalive.yml           # 10~14분 간격 ping (Render 슬립 방지)
+│   ├── keepalive.yml           # 10분 간격 ping (Render 슬립 방지)
 │   └── daily-batch.yml         # KST 07:00 배치 refresh 트리거
-└── docs/
-    ├── design_doc.md
-    ├── architecture.md
-    └── changelog.md
+├── INDICATORS.md               # 사용 지표 논리 + 계산식 레퍼런스
+├── config.py                   # 전역 설정값
+├── render.yaml                 # Render 배포 설정
+└── .python-version             # Python 3.12.0 고정
 ```
 
-## GitHub Actions 설정
-
-Render free plan은 15분 비활성 시 슬립 → 두 워크플로우로 해결.
-
-### Repository Secrets 설정
-
-GitHub 저장소 → **Settings → Secrets and variables → Actions → New repository secret**:
-
-| Secret 이름 | 값 |
-|-------------|-----|
-| `RENDER_URL` | `https://your-app.onrender.com` |
-| `REFRESH_TOKEN` | Render Environment Variables에 설정한 동일 토큰 |
-
-### Render Environment Variables 설정
-
-Render 대시보드 → 앱 선택 → **Environment** 탭:
-
-| 변수 | 값 |
-|------|-----|
-| `FRED_API_KEY` | FRED API 키 |
-| `QUIVERQUANT_API_KEY` | QuiverQuant API 키 |
-| `REFRESH_TOKEN` | GitHub Secrets의 `REFRESH_TOKEN`과 동일한 값 |
+---
 
 ## 등급 기준
 
-| 등급 | 점수 | 행동 |
+### 스크리닝 (체크리스트 비율 기반)
+
+| 등급 | 조건 | 행동 |
 |------|------|------|
-| S | ≥ 6 | 즉시 진입 |
-| A | ≥ 4 | 분할 진입 검토 |
-| B | ≥ 2 | 대기 |
-| SKIP | RSI≥80 또는 0점 | 진입 금지 |
+| S | score/max ≥ 0.67 | 즉시 진입 검토 |
+| A | score/max ≥ 0.44 | 분할 진입 검토 |
+| B | score/max ≥ 0.22 | 대기 |
+| SKIP | RSI ≥ 80 또는 비율 미달 | 진입 금지 |
 
-목표가 +8% / +15%, 손절 -7%.
+체크리스트 항목 비활성화 시 분모(max) 자동 조정.
 
-## 매매 타이밍 시그널
+### 매매시그널 (가중 합산)
 
-차트 모달의 마스터 시그널은 종목 카드 "차트 분석" 버튼 클릭 시 생성됩니다.
+| 등급 | 조건 |
+|------|------|
+| STRONG BUY | 가중합 ≥ 0.60 |
+| BUY | 가중합 ≥ 0.40 |
+| WATCH | 가중합 ≥ 0.20 |
+| NO SIGNAL | 가중합 < 0.20 또는 활성 카테고리 < 2개 |
 
-| 시그널 | 조건 |
-|--------|------|
-| 매수 | MA20 > MA60 (상승추세) AND 가격이 MA20±ATR 눌림목 존 AND (RSI 반등 OR 거래대금 2배↑) |
-| 매도 | 데드크로스 OR RSI 75 이상→하락 OR ATR 손절(MA20−2×ATR 이탈) |
+---
 
-별도 시그널 스코어링(7개 지표)은 STRONG BUY / BUY / WATCH / NO SIGNAL 4단계로 표시됩니다.
+## GitHub Actions 설정
+
+Render free plan은 15분 비활성 시 슬립 → 두 워크플로우로 방지.
+
+### Repository Secrets
+
+**Settings → Secrets and variables → Actions**:
+
+| Secret | 값 |
+|--------|----|
+| `RENDER_URL` | `https://your-app.onrender.com` |
+| `REFRESH_TOKEN` | Render 환경변수에 설정한 동일 토큰 |
+
+### Render Environment Variables
+
+**Render 대시보드 → Environment 탭**:
+
+| 변수 | 값 |
+|------|----|
+| `FRED_API_KEY` | FRED API 키 |
+| `QUIVERQUANT_API_KEY` | QuiverQuant API 키 |
+| `REFRESH_TOKEN` | GitHub Secrets의 `REFRESH_TOKEN`과 동일 |
+
+---
+
+## 지표 레퍼런스
+
+사용하는 모든 기술적 지표의 계산식과 논리 → **[INDICATORS.md](INDICATORS.md)**
