@@ -21,6 +21,7 @@ def compute_buy_signals(df: pd.DataFrame) -> list[dict]:
         return []
 
     close  = df["Close"]
+    high   = df["High"]
     low    = df["Low"]
     open_  = df["Open"]
     volume = df["Volume"]
@@ -50,6 +51,7 @@ def compute_buy_signals(df: pd.DataFrame) -> list[dict]:
     n         = len(df)
     c_arr     = close.values
     o_arr     = open_.values
+    hi_arr    = high.values
     lo_arr    = low.values
     m5_arr    = ma5.values
     m20_arr   = ma20.values
@@ -101,12 +103,31 @@ def compute_buy_signals(df: pd.DataFrame) -> list[dict]:
     # MACD 히스토그램 음→양 전환
     macd_turn = (mh_arr > 0) & (mh_prev <= 0)
 
-    buy_cond = valid & uptrend & in_zone & (rsi_mom | vol_spk | ma_golden | macd_turn)
+    # Fair Value Gap (SMC): 과거 강세 충격파가 남긴 지지 공백에 가격 진입
+    # 공백 구간: [High[j-2], Low[j]] — price 재방문 시 기관 지지 기대
+    fvg_support = np.zeros(n, dtype=bool)
+    for i in range(4, n):
+        p = c_arr[i]
+        for j in range(max(2, i - 20), i - 1):
+            if lo_arr[j] > hi_arr[j - 2]:  # bullish FVG at candle j
+                zone_bot = hi_arr[j - 2]
+                zone_top = lo_arr[j]
+                if zone_bot <= p <= zone_top * 1.02:
+                    fvg_support[i] = True
+                    break
+
+    # 메인 진입존 시그널 (MA60~MA20+0.5ATR 구간 내 모멘텀 트리거)
+    main_cond = valid & uptrend & in_zone & (rsi_mom | vol_spk | ma_golden | macd_turn)
+    # FVG 구조적 진입 (진입존 조건 불필요 — 기관 지지선 자체가 진입 근거)
+    fvg_cond  = valid & uptrend & fvg_support
+    buy_cond  = main_cond | fvg_cond
 
     markers = []
     for i in np.where(buy_cond)[0]:
         if ma_golden[i]:
             reason = "MA5골든"
+        elif fvg_support[i]:
+            reason = "FVG반등"
         elif rsi_mom[i] and vol_spk[i]:
             reason = "RSI+볼륨"
         elif rsi_mom[i]:

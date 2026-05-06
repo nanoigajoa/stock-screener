@@ -51,6 +51,10 @@ def calculate_indicators(df: pd.DataFrame) -> dict | None:
         higher_high = float(second_half["High"].max()) > float(first_half["High"].max())
         higher_low = float(second_half["Low"].min()) > float(first_half["Low"].min())
 
+        # 최근 60일 고점 대비 낙폭 (max drawdown gate용)
+        price_60d_high = float(df["Close"].tail(60).max())
+        drawdown_from_high = (price / price_60d_high) - 1 if price_60d_high > 0 else 0.0
+
         if any(v is None for v in [price, ma5_val, ma20_val, rsi_val, macd_val]):
             return None
 
@@ -73,6 +77,7 @@ def calculate_indicators(df: pd.DataFrame) -> dict | None:
             "resistance": resistance,
             "higher_high": higher_high,
             "higher_low": higher_low,
+            "drawdown_from_high": round(drawdown_from_high, 4),
         }
 
     except Exception as e:

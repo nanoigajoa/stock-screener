@@ -6,6 +6,7 @@
 """
 import logging
 import pandas as pd
+import pandas_ta as ta  # noqa: F401 — registers df.ta accessor
 
 from screener.indicators import (
     calc_atr_zones,
@@ -88,6 +89,19 @@ def _detect_recent_bullish(df: pd.DataFrame, lookback: int = 3) -> list[str]:
                     detected.append("LiquiditySweep")
                     break   # 중복 방지
 
+        # Fair Value Gap (SMC): 과거 강세 충격파가 남긴 가격 공백이 현재 지지구간
+        # 형성: Low[j] > High[j-2] → [High[j-2], Low[j]] 사이에 공백
+        # 진입: 현재가가 공백 구간 안 또는 구간 상단(Low[j]) 2% 이내
+        if len(df) >= 5:
+            price_now = float(c[-1])
+            for j in range(max(2, len(df) - 21), len(df) - 1):
+                if l[j] > h[j - 2]:  # bullish FVG
+                    zone_bot = h[j - 2]
+                    zone_top = l[j]
+                    if zone_bot <= price_now <= zone_top * 1.02:
+                        detected.append("FVG")
+                        break
+
         # 중복 제거 후 반환
         result = list(dict.fromkeys(detected))
         if result:
@@ -146,7 +160,22 @@ def score_signals(
                 atr_ok = 0.0   # 진입존 아래
         else:
             atr_ok = 0.0
-        trend_score = _cat_score(ma_intensity, atr_ok)
+
+        # ADX(30): 추세 강도 측정 (방향 없이 강도만)
+        # ADX < 20 = 추세 없음(횡보), 20~50 = 추세 형성, 50+ = 강한 추세
+        adx_intensity = 0.5  # 계산 불가 시 중립
+        try:
+            adx_df = df_daily.ta.adx(length=30)
+            if adx_df is not None and not adx_df.empty:
+                adx_col = [c for c in adx_df.columns if c.startswith("ADX_")]
+                if adx_col:
+                    adx_val = float(adx_df[adx_col[0]].iloc[-1])
+                    if not pd.isna(adx_val):
+                        adx_intensity = min(max((adx_val - 20) / 30, 0.0), 1.0)
+        except Exception:
+            pass
+
+        trend_score = (ma_intensity + atr_ok + adx_intensity) / 3
 
         # Momentum: RSI 위치 기반 (주) + StochRSI 방향 보정 (부)
         #
@@ -199,7 +228,23 @@ def score_signals(
                 cmf_intensity = min(cmf_val / 0.15, 1.0)
 
         obv_intensity = 1.0 if (obv and obv["divergence"] == "bullish") else 0.0
-        volume_score = _cat_score(cmf_intensity, obv_intensity)
+
+        # MFI(14): 가격+거래량 통합 압력지수 — CMF·OBV 교차검증 3번째 축
+        # 20~55 = 과매도 회복 구간(매수 타이밍), <20 = 극단 과매도(반등 대기)
+        mfi_intensity = 0.0
+        try:
+            mfi_s = df_daily.ta.mfi(length=14)
+            if mfi_s is not None and len(mfi_s) > 0:
+                mfi_val = float(mfi_s.iloc[-1])
+                if not pd.isna(mfi_val):
+                    if 20 <= mfi_val <= 55:
+                        mfi_intensity = (mfi_val - 20) / 35   # 20→0.0, 55→1.0
+                    elif mfi_val < 20:
+                        mfi_intensity = 0.2                    # 극단 과매도: 반등 가능성 소량 반영
+        except Exception:
+            pass
+
+        volume_score = (cmf_intensity + obv_intensity + mfi_intensity) / 3
 
         # Pattern: LiquiditySweep = 1.5단위(최강 신호), 나머지 = 1단위
         # 2단위 이상 = 1.0  (LiquiditySweep 단독 → 0.75)

@@ -20,6 +20,18 @@ def score_ticker(
     enabled = set(enabled_checks) if enabled_checks else set(_ALL_CHECKS)
     rsi = ind["rsi"]
 
+    # 60일 고점 대비 낙폭 하드게이트 — 추세 붕괴 판단
+    drawdown = ind.get("drawdown_from_high")
+    if drawdown is not None and drawdown < -0.20:
+        max_score = sum(_WEIGHTS[k] for k in _ALL_CHECKS if k in enabled)
+        return {
+            "items": {},
+            "total_score": 0,
+            "max_score": max_score,
+            "hard_skip": True,
+            "hard_skip_reason": f"60일 고점 대비 {drawdown*100:.1f}% 하락 (추세 붕괴)",
+        }
+
     # RSI 하드게이트 — 나머지 채점 불필요
     if rsi >= RSI_HARD_GATE:
         max_score = sum(_WEIGHTS[k] for k in _ALL_CHECKS if k in enabled)
