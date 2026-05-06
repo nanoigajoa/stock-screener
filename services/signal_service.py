@@ -40,9 +40,22 @@ def run_signal_analysis(tickers: list[str] | None = None) -> dict:
             "watchlist": [],
         }
 
-    # 일봉 수집 (당일 캐시 재사용)
-    ohlcv_map = fetch_ohlcv(tickers)
+    # 일봉 수집 (당일 캐시 재사용) — SPY 포함
+    ohlcv_map = fetch_ohlcv(tickers + ["SPY"] if "SPY" not in tickers else tickers)
     market_open = is_market_open()
+
+    # 시장 국면 필터: SPY MA50 기준 상승장/하락장 판단
+    # 하락장(SPY < MA50)에서는 STRONG BUY·BUY → WATCH로 캡핑
+    # 개별 종목 강세 신호가 맞더라도 시장 조류에 역행하는 진입 위험 차단
+    spy_regime = True  # 데이터 오류 시 상승장 가정 (보수적)
+    try:
+        spy_df = ohlcv_map.get("SPY")
+        if spy_df is not None and len(spy_df) >= 50:
+            spy_ma50  = float(spy_df["Close"].rolling(50).mean().iloc[-1])
+            spy_close = float(spy_df["Close"].iloc[-1])
+            spy_regime = spy_close > spy_ma50
+    except Exception:
+        pass
 
     # 장 중이면 fast_info로 최신 가격 일괄 수집 (5분 캐시)
     live_prices: dict[str, float] = {}
@@ -120,6 +133,13 @@ def run_signal_analysis(tickers: list[str] | None = None) -> dict:
 
     results = [futures[t].result() for t in tickers]
 
+    # 하락장 캡핑: STRONG BUY / BUY → WATCH
+    if not spy_regime:
+        for r in results:
+            if r["signal_grade"] in ("STRONG BUY", "BUY"):
+                r["signal_grade"] = "WATCH"
+                r["regime_capped"] = True   # UI 경고 표시용
+
     # STRONG BUY 순 정렬, 동점은 signal_score 내림차순
     results.sort(key=lambda r: (
         _GRADE_ORDER.get(r["signal_grade"], 9),
@@ -146,6 +166,6 @@ def run_signal_analysis(tickers: list[str] | None = None) -> dict:
 
     return {
         "results": results,
-        "summary": {"total": len(results), **counts, "market_open": market_open},
+        "summary": {"total": len(results), **counts, "market_open": market_open, "spy_regime": spy_regime},
         "watchlist": tickers,
     }

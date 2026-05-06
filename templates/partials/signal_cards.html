@@ -3,6 +3,13 @@
 {% set _grade_cls  = {"STRONG BUY": "sig-strong-buy", "BUY": "sig-buy", "WATCH": "sig-watch", "NO SIGNAL": "sig-nosignal"} %}
 {% set _cat_labels = [("trend", "추세"), ("momentum", "모멘텀"), ("volume", "수급"), ("pattern", "패턴")] %}
 
+{# ── 시장 국면 경고 배너 ── #}
+{% if summary.spy_regime == false %}
+<div class="regime-warning">
+  ⚠️ SPY MA50 하락장 — 매수 신호 감쇄 중 (STRONG BUY·BUY → WATCH 자동 캡핑)
+</div>
+{% endif %}
+
 {# ── 요약 바 ── #}
 <div class="signal-summary">
   총 {{ summary.total }}개 |

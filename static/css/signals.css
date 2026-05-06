@@ -495,3 +495,14 @@
   .sc-price-zone  { grid-area: price; }
   .sc-footer      { grid-area: foot; justify-content: flex-end; }
 }
+
+/* ── Market Regime Warning ─────────────────────────────── */
+.regime-warning {
+  background: #2d1f07;
+  border: 1px solid #c8841a;
+  border-radius: 6px;
+  color: #f0a830;
+  font-size: 0.82rem;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+}
