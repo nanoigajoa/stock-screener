@@ -21,10 +21,10 @@ _SIG_KO = {
 }
 
 _CAT_LABELS = {
-    "trend":    "추세",
-    "momentum": "모멘텀",
-    "volume":   "수급",
-    "pattern":  "패턴",
+    "entry":     "진입",
+    "momentum":  "모멘텀",
+    "structure": "구조",
+    "volume":    "수급",
 }
 
 @router.get("/explore", response_class=HTMLResponse)

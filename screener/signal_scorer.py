@@ -1,8 +1,13 @@
 """
-4-카테고리 가중 매매시점 시그널 스코어링.
-기존 7 boolean 합산 → 추세·모멘텀·수급·패턴 카테고리별 가중 평균(0~1 float).
+3축 독립 매매타이밍 스코어링.
 
-기존 S/A/B/SKIP 체크리스트와 완전 독립 — 기존 필드에 영향 없음.
+진입 포지션(40%) + 모멘텀 강도(35%) + 구조 확인(25%) + 수급 보너스(+0.05)
+
+설계 원칙:
+  - 각 축은 서로 다른 정보 계층(가격위치 / 가격속도 / 가격구조)
+  - 수급(CMF·OBV)은 독립 카테고리가 아닌 교차 검증 보너스
+  - MA정배열·ADX 등 추세 컨텍스트는 사전 필터 또는 모멘텀 보조로 이동
+  - 기존 S/A/B/SKIP 체크리스트와 완전 독립 — 기존 필드에 영향 없음
 """
 import logging
 import pandas as pd
@@ -10,6 +15,7 @@ import pandas_ta as ta  # noqa: F401 — registers df.ta accessor
 
 from screener.indicators import (
     calc_atr_zones,
+    calc_bb_advanced,
     calc_stoch_rsi,
     calc_obv_divergence,
     calc_ma_alignment,
@@ -21,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def _detect_recent_bullish(df: pd.DataFrame, lookback: int = 3) -> list[str]:
-    """최근 lookback봉 내 강세 캔들 패턴 감지 (순수 pandas 구현)."""
+    """최근 lookback봉 내 강세 캔들·구조 패턴 감지 (순수 pandas 구현)."""
     try:
         if len(df) < 4:
             return []
@@ -64,9 +70,9 @@ def _detect_recent_bullish(df: pd.DataFrame, lookback: int = 3) -> list[str]:
         # Morning Star (3봉): [-3] 음봉 | [-2] 소체 | [-1] 양봉이 [-3] 중간 이상
         if len(df) >= 3:
             i = len(df) - 1
-            b1 = abs(c[i-2] - o[i-2])   # 첫 봉 몸통
-            b2 = abs(c[i-1] - o[i-1])   # 중간 봉 몸통
-            b3 = abs(c[i]   - o[i])      # 마지막 봉 몸통
+            b1 = abs(c[i-2] - o[i-2])
+            b2 = abs(c[i-1] - o[i-1])
+            b3 = abs(c[i]   - o[i])
             mid_of_first = (o[i-2] + c[i-2]) / 2
             if (c[i-2] < o[i-2] and b2 < b1 * 0.5
                     and c[i] > o[i] and c[i] >= mid_of_first and b3 > b1 * 0.5):
@@ -81,30 +87,26 @@ def _detect_recent_bullish(df: pd.DataFrame, lookback: int = 3) -> list[str]:
             if all_bull and rising and open_in_body:
                 detected.append("ThreeWhiteSoldiers")
 
-        # Liquidity Sweep: 최근 lookback봉 내에서 20봉 저점을 장중 이탈 후 종가 회복
-        # 기관이 개인의 손절 물량을 빼앗은 후 급반등 — 가장 강한 매집 신호
+        # Liquidity Sweep: 20봉 저점을 장중 이탈 후 종가 회복 — 가장 강한 기관 매집 신호
         if len(df) >= 21:
             for ls_i in range(max(21, len(df) - lookback), len(df)):
-                pool = min(l[ls_i - 20:ls_i])   # 직전 20봉 최저가 (현봉 제외)
+                pool = min(l[ls_i - 20:ls_i])
                 if l[ls_i] < pool and c[ls_i] > pool:
                     detected.append("LiquiditySweep")
-                    break   # 중복 방지
+                    break
 
-        # Fair Value Gap (SMC): 과거 강세 충격파가 남긴 가격 공백이 현재 지지구간
-        # 형성: Low[j] > High[j-2] → [High[j-2], Low[j]] 사이에 공백
-        # 진입: 현재가가 공백 구간 안 또는 구간 상단(Low[j]) 2% 이내
+        # Fair Value Gap (SMC): 강세 충격파가 남긴 가격 공백이 현재 지지구간
         if len(df) >= 5:
             price_now = float(c[-1])
             for j in range(max(2, len(df) - 21), len(df) - 1):
-                if l[j] > h[j - 2]:  # bullish FVG
+                if l[j] > h[j - 2]:
                     zone_bot = h[j - 2]
                     zone_top = l[j]
                     if zone_bot <= price_now <= zone_top * 1.02:
                         detected.append("FVG")
                         break
 
-        # Volume Profile POC: 20일 거래량 최고 밀집 가격대에 현재가 근접
-        # POC 직상방 = 기관의 평균 매입 단가가 지지선으로 작동하는 구간
+        # Volume Profile POC: 20일 거래량 최고 밀집 가격대 직상방 진입
         try:
             vp = calc_volume_profile(df)
             if vp:
@@ -115,7 +117,6 @@ def _detect_recent_bullish(df: pd.DataFrame, lookback: int = 3) -> list[str]:
         except Exception:
             pass
 
-        # 중복 제거 후 반환
         result = list(dict.fromkeys(detected))
         if result:
             logger.info(f"[Signal] 패턴 발견: {result}")
@@ -125,23 +126,18 @@ def _detect_recent_bullish(df: pd.DataFrame, lookback: int = 3) -> list[str]:
         return []
 
 
-def _cat_score(a: float, b: float) -> float:
-    """두 [0,1] 강도값 평균 → 카테고리 점수."""
-    return (a + b) / 2
-
-
 def score_signals(
     df_daily: pd.DataFrame,
     df_hourly: pd.DataFrame | None = None,
 ) -> dict:
     """
-    4-카테고리 가중 평균 시그널 스코어링.
-    ... (중략) ...
+    3축 독립 가중 매매타이밍 스코어링.
+
     Returns:
-        signal_grade:     "STRONG BUY" | "BUY" | "WATCH" | "NO SIGNAL"
-        signal_score:     float  0.0 ~ 1.0 (가중 평균)
-        signal_breakdown: dict[category, float]  각 카테고리 점수
-        detected_patterns: list[str]  감지된 캔들 패턴명
+        signal_grade:      "STRONG BUY" | "BUY" | "WATCH" | "NO SIGNAL"
+        signal_score:      float 0.0~1.0
+        signal_breakdown:  {"entry", "momentum", "structure", "volume"}
+        detected_patterns: list[str]
         entry_low, entry_high, signal_stop
     """
     try:
@@ -152,30 +148,81 @@ def score_signals(
         cmf_data = calc_cmf(df_daily)
         patterns = _detect_recent_bullish(df_daily)
 
-        price = float(df_daily["Close"].iloc[-1])
+        price   = float(df_daily["Close"].iloc[-1])
+        cmf_val = cmf_data["cmf"] if cmf_data else 0.0
 
-        # ── 카테고리별 점수 계산 ──────────────────────────────
-        # Trend: MA 정배열 폭(%) + 진입존 위치 연속값
-        ma20_val = ma.get("ma20")
-        ma60_val = ma.get("ma60")
-        if ma20_val and ma60_val and ma60_val > 0:
-            spread_pct = (ma20_val - ma60_val) / ma60_val
-            ma_intensity = min(max(spread_pct / 0.05, 0.0), 1.0)  # 5% 이상 = 만점
-        else:
-            ma_intensity = 0.0
-
+        # ── 1. 진입 포지션 (40%) ────────────────────────────
+        # "지금 가격이 얼마나 좋은 위치인가"
+        # ATR 진입존 (70%): MA60~MA20+0.5ATR 내 위치
         if atr:
             if atr["entry_low"] <= price <= atr["entry_high"]:
-                atr_ok = 1.0   # 진입존 안 — 이상적 타이밍
+                zone_score = 1.0
             elif price > atr["entry_high"]:
-                atr_ok = 0.5   # 이미 위에 있음 — 늦은 진입
+                excess = (price - atr["entry_high"]) / max(atr["atr"], 0.01)
+                zone_score = max(0.5 - excess * 0.1, 0.0)
             else:
-                atr_ok = 0.0   # 진입존 아래
+                zone_score = 0.0
         else:
-            atr_ok = 0.0
+            zone_score = 0.0
 
-        # ADX(30): 추세 강도 측정 (방향 없이 강도만)
-        # ADX < 20 = 추세 없음(횡보), 20~50 = 추세 형성, 50+ = 강한 추세
+        # BB %B (30%): 볼린저밴드 하단 근접 — 통계적 과매도 위치
+        bb_score = 0.0
+        try:
+            bb = calc_bb_advanced(df_daily)
+            if bb and bb.get("pct_b") is not None:
+                pct_b = bb["pct_b"]
+                if pct_b <= 0.20:
+                    bb_score = 1.0 - pct_b / 0.20   # 0→1.0, 0.20→0.0
+        except Exception:
+            pass
+
+        entry_score = zone_score * 0.70 + bb_score * 0.30
+
+        # ── 2. 모멘텀 강도 (35%) ────────────────────────────
+        # "가격 회복 속도가 얼마나 강한가"
+        # RSI 구간별 점수
+        rsi_score = 0.0
+        if stoch:
+            rsi = stoch.get("rsi")
+            if rsi is not None:
+                if 45 <= rsi <= 65:
+                    rsi_score = 1.0 - abs(rsi - 55) / 10   # 55→1.0, 45/65→0.0
+                elif 35 <= rsi < 45:
+                    rsi_score = (rsi - 35) / 10 * 0.6       # 35→0.0, 45→0.6
+                elif 65 < rsi <= 75:
+                    rsi_score = (75 - rsi) / 10 * 0.4       # 65→0.4, 75→0.0
+
+        # RSI 히스테리시스: 30 이하 방문 후 35 미회복 시 억제 (데드캣 바운스 필터)
+        try:
+            rsi_series = df_daily.ta.rsi(length=14)
+            if rsi_series is not None:
+                recent_rsi = rsi_series.dropna().tail(10).tolist()
+                if len(recent_rsi) >= 3 and any(r < 30 for r in recent_rsi[:-1]):
+                    if recent_rsi[-1] < 35:
+                        rsi_score *= 0.5
+        except Exception:
+            pass
+
+        # StochRSI 보너스: 과매도권 탈출 중
+        stoch_bonus = 0.0
+        if stoch:
+            k   = stoch["k"]
+            k_p = stoch.get("k_prev", k)
+            if k > k_p and k_p < 0.35:
+                stoch_bonus = min((k - k_p) / 0.05, 0.3)
+
+        # Z-Score 보너스: 통계적 과매도 확인
+        z_bonus = 0.0
+        close_tail = df_daily["Close"].tail(20).values
+        if len(close_tail) >= 20:
+            _std = close_tail.std(ddof=1)
+            if _std > 0:
+                z = (float(close_tail[-1]) - close_tail.mean()) / _std
+                z_bonus = 0.30 if z < -2.0 else (0.15 if z < -1.0 else 0.0)
+
+        rsi_base = min(rsi_score + max(stoch_bonus, z_bonus), 1.0)
+
+        # ADX(30): 추세 강도 — 횡보(ADX<20) vs 추세(ADX>50)
         adx_intensity = 0.5  # 계산 불가 시 중립
         try:
             adx_df = df_daily.ta.adx(length=30)
@@ -188,117 +235,54 @@ def score_signals(
         except Exception:
             pass
 
-        trend_score = (ma_intensity + atr_ok + adx_intensity) / 3
+        momentum_score = rsi_base * 0.65 + adx_intensity * 0.35
 
-        # Momentum: RSI 위치 기반 (주) + StochRSI 방향 보정 (부)
-        #
-        # RSI 구간별 점수:
-        #   45~65  → 건강한 상승 모멘텀 구간, 55에서 만점
-        #   35~45  → 눌림목 회복 중, 선형 증가
-        #   65~75  → 과매수 진입, 선형 감소
-        #   <35 / >75 → 극단 구간, 0점
-        rsi_score = 0.0
-        if stoch:
-            rsi = stoch.get("rsi")
-            if rsi is not None:
-                if 45 <= rsi <= 65:
-                    rsi_score = 1.0 - abs(rsi - 55) / 10   # 55 → 1.0, 45/65 → 0.0
-                elif 35 <= rsi < 45:
-                    rsi_score = (rsi - 35) / 10 * 0.6       # 35 → 0.0, 45 → 0.6
-                elif 65 < rsi <= 75:
-                    rsi_score = (75 - rsi) / 10 * 0.4       # 65 → 0.4, 75 → 0.0
+        # ── 3. 구조 확인 (25%) ──────────────────────────────
+        # "기관 흔적이 이 가격대를 지지하는가"
+        # 기관 구조 신호(FVG·POC·LiquiditySweep) — 강한 기반 신호
+        # 캔들 패턴 — 소프트 확인 신호 (기반 신호 없을 시 최대 0.5)
+        _STRONG = {"LiquiditySweep": 1.0, "FVG": 0.9, "POC": 0.8}
+        _SOFT   = {
+            "MorningStar": 0.5, "ThreeWhiteSoldiers": 0.5,
+            "BullishEngulfing": 0.3, "Hammer": 0.3, "PiercingLine": 0.3,
+        }
+        strong_score    = max((_STRONG.get(p, 0.0) for p in patterns), default=0.0)
+        soft_total      = min(sum(_SOFT.get(p, 0.0) for p in patterns), 0.50)
+        structure_score = min(strong_score + soft_total * (1.0 - strong_score), 1.0)
 
-        # RSI 히스테리시스: 최근 10일 내 RSI가 30 이하를 방문했지만 35 미회복 시 억제
-        # 단순 RSI 반등(데드캣 바운스)을 진짜 회복으로 오인하는 오신호 필터
-        try:
-            rsi_series = df_daily.ta.rsi(length=14)
-            if rsi_series is not None:
-                recent_rsi = rsi_series.dropna().tail(10).tolist()
-                if len(recent_rsi) >= 3:
-                    recently_oversold = any(r < 30 for r in recent_rsi[:-1])
-                    if recently_oversold and recent_rsi[-1] < 35:
-                        rsi_score *= 0.5
-        except Exception:
-            pass
-
-        # StochRSI 방향: 과매도권 탈출 중이면 보너스
-        stoch_bonus = 0.0
-        if stoch:
-            k   = stoch["k"]
-            k_p = stoch.get("k_prev", k)
-            if k > k_p and k_p < 0.35:
-                stoch_bonus = min((k - k_p) / 0.05, 0.3)
-
-        # Z-Score: (종가 - 20일 평균) / 20일 표준편차
-        # 통계적 과매도 확인 — StochRSI 보너스와 상호 교차 검증
-        z_bonus = 0.0
-        close_tail = df_daily["Close"].tail(20).values
-        if len(close_tail) >= 20:
-            _std = close_tail.std(ddof=1)
-            if _std > 0:
-                z = (float(close_tail[-1]) - close_tail.mean()) / _std
-                if z < -2.0:
-                    z_bonus = 0.30   # 극단적 과매도 (2σ 이하)
-                elif z < -1.0:
-                    z_bonus = 0.15   # 보통 과매도 (1~2σ 사이)
-
-        # 두 보너스 중 강한 쪽 채택 (동일 현상을 이중 계산 방지)
-        momentum_score = min(rsi_score + max(stoch_bonus, z_bonus), 1.0)
-
-        # Volume: CMF 자금 유입 강도 + OBV 정배열
-        # CMF > 0 → 매수 압력 (0.15 이상 = 만점), CMF ≤ 0 → 0점
-        cmf_intensity = 0.0
-        if cmf_data:
-            cmf_val = cmf_data["cmf"]
-            if cmf_val > 0:
-                cmf_intensity = min(cmf_val / 0.15, 1.0)
-
-        obv_intensity = 1.0 if (obv and obv["divergence"] == "bullish") else 0.0
-
-        # MFI(14): 가격+거래량 통합 압력지수 — CMF·OBV 교차검증 3번째 축
-        # 20~55 = 과매도 회복 구간(매수 타이밍), <20 = 극단 과매도(반등 대기)
-        mfi_intensity = 0.0
-        try:
-            mfi_s = df_daily.ta.mfi(length=14)
-            if mfi_s is not None and len(mfi_s) > 0:
-                mfi_val = float(mfi_s.iloc[-1])
-                if not pd.isna(mfi_val):
-                    if 20 <= mfi_val <= 55:
-                        mfi_intensity = (mfi_val - 20) / 35   # 20→0.0, 55→1.0
-                    elif mfi_val < 20:
-                        mfi_intensity = 0.2                    # 극단 과매도: 반등 가능성 소량 반영
-        except Exception:
-            pass
-
-        volume_score = (cmf_intensity + obv_intensity + mfi_intensity) / 3
-
-        # Pattern: LiquiditySweep = 1.5단위(최강 신호), 나머지 = 1단위
-        # 2단위 이상 = 1.0  (LiquiditySweep 단독 → 0.75)
-        if patterns:
-            units = sum(1.5 if p == "LiquiditySweep" else 1.0 for p in patterns)
-            pattern_score = min(units / 2.0, 1.0)
+        # ── 4. 수급 보너스 (가산, 최대 +0.05) ──────────────
+        # CMF + OBV 교차 검증 — 독립 카테고리가 아닌 이중 확인 보너스
+        obv_bullish = obv and obv.get("divergence") == "bullish"
+        if cmf_val > 0.15 and obv_bullish:
+            volume_bonus = 0.05
+        elif cmf_val > 0.0 and obv_bullish:
+            volume_bonus = 0.02
         else:
-            pattern_score = 0.0
+            volume_bonus = 0.0
+
+        # 수급 표시용 0~1 (UI 바 전용, 점수 계산에 미사용)
+        cmf_display    = min(cmf_val / 0.15, 1.0) if cmf_val > 0 else 0.0
+        obv_display    = 1.0 if obv_bullish else 0.0
+        volume_display = (cmf_display + obv_display) / 2
 
         # ── 가중 합산 ─────────────────────────────────────────
-        total = (
-            trend_score    * 0.35 +
-            momentum_score * 0.25 +
-            volume_score   * 0.25 +
-            pattern_score  * 0.15
+        total = min(
+            entry_score     * 0.40 +
+            momentum_score  * 0.35 +
+            structure_score * 0.25 +
+            volume_bonus,
+            1.0,
         )
 
-        # ── 확인 게이트: 최소 2개 카테고리 활성 ──────────────
-        active = sum(
-            1 for s in [trend_score, momentum_score, volume_score, pattern_score]
-            if s > 0
-        )
+        # ── 등급 판정 ─────────────────────────────────────────
+        # 진입 포지션 또는 모멘텀이 0이면 신호 없음 (한 축도 충족 못한 것)
+        # MA 하락배열(MA20<MA60) 시 STRONG BUY 차단 — 하락 추세 편승 방지
+        ma_bullish = ma.get("daily") == "bullish"
 
-        # trend(0.35)+momentum(0.25) = 0.60 → STRONG BUY 도달 가능하도록 조정
-        if active < 2:
+        if entry_score <= 0.0 or momentum_score <= 0.0:
             grade = "NO SIGNAL"
         elif total >= 0.60:
-            grade = "STRONG BUY"
+            grade = "STRONG BUY" if ma_bullish else "BUY"
         elif total >= 0.40:
             grade = "BUY"
         elif total >= 0.20:
@@ -310,10 +294,10 @@ def score_signals(
             "signal_grade":    grade,
             "signal_score":    round(total, 3),
             "signal_breakdown": {
-                "trend":    trend_score,
-                "momentum": momentum_score,
-                "volume":   volume_score,
-                "pattern":  pattern_score,
+                "entry":     round(entry_score,     3),
+                "momentum":  round(momentum_score,  3),
+                "structure": round(structure_score, 3),
+                "volume":    round(volume_display,  3),
             },
             "detected_patterns": patterns,
             "entry_low":   atr["entry_low"]   if atr else None,
@@ -327,8 +311,8 @@ def score_signals(
             "signal_grade":    "NO SIGNAL",
             "signal_score":    0.0,
             "signal_breakdown": {
-                "trend": 0.0, "momentum": 0.0,
-                "volume": 0.0, "pattern": 0.0,
+                "entry": 0.0, "momentum": 0.0,
+                "structure": 0.0, "volume": 0.0,
             },
             "entry_low":   None,
             "entry_high":  None,

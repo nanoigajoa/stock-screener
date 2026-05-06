@@ -1,7 +1,7 @@
 {#-- 시그널 결과 카드 리스트. signals.py의 _render_signal_cards() + 요약 헤더 대체. --#}
 {% set _grade_icon = {"STRONG BUY": "⚡", "BUY": "▲", "WATCH": "◎", "NO SIGNAL": "–"} %}
 {% set _grade_cls  = {"STRONG BUY": "sig-strong-buy", "BUY": "sig-buy", "WATCH": "sig-watch", "NO SIGNAL": "sig-nosignal"} %}
-{% set _cat_labels = [("trend", "추세"), ("momentum", "모멘텀"), ("volume", "수급"), ("pattern", "패턴")] %}
+{% set _cat_labels = [("entry", "진입"), ("momentum", "모멘텀"), ("structure", "구조"), ("volume", "수급")] %}
 
 {# ── 시장 국면 경고 배너 ── #}
 {% if summary.spy_regime == false %}

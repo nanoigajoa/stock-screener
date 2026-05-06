@@ -21,9 +21,9 @@ def generate_summary(foundation: dict, timing: dict) -> str:
         breakdown = timing.get("signal_breakdown", {})
         patterns = timing.get("detected_patterns", [])
         
-        trend_score = breakdown.get("trend", 0)
+        entry_score    = breakdown.get("entry", 0)
         momentum_score = breakdown.get("momentum", 0)
-        volume_score = breakdown.get("volume", 0)
+        volume_score   = breakdown.get("volume", 0)
         
         # ── 문장 조합 로직 ──────────────────────────────
         parts = []
@@ -45,7 +45,7 @@ def generate_summary(foundation: dict, timing: dict) -> str:
         if sig_grade == "STRONG BUY":
             parts.append("지금 당장 수급과 모멘텀이 동시에 폭발하는 골든 타임입니다.")
         elif sig_grade == "BUY":
-            if trend_score >= 0.5 and momentum_score >= 0.5:
+            if entry_score >= 0.5 and momentum_score >= 0.5:
                 parts.append("상승 추세 속에서 매수세가 붙기 시작한 좋은 진입 시점입니다.")
             elif volume_score >= 0.5:
                 parts.append("강한 거래량이 동반되며 단기 반등을 준비하는 모습입니다.")

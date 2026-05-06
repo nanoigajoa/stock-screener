@@ -180,7 +180,7 @@ function _renderSignalDetail(info) {
   if (!info || !info.grade) { detail.innerHTML = ''; return; }
 
   const GRADE_CLS  = { 'STRONG BUY': 'grade-strong-buy', 'BUY': 'grade-buy', 'WATCH': 'grade-watch', 'NO SIGNAL': 'grade-nosignal' };
-  const CAT_LABELS = { trend: '추세', momentum: '모멘텀', volume: '수급', pattern: '패턴' };
+  const CAT_LABELS = { entry: '진입', momentum: '모멘텀', structure: '구조', volume: '수급' };
 
   const gradeCls = GRADE_CLS[info.grade] || 'grade-nosignal';
   const score    = Math.round((info.score || 0) * 100);

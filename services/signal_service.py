@@ -101,7 +101,7 @@ def run_signal_analysis(tickers: list[str] | None = None) -> dict:
             return {
                 "ticker": ticker, "price": 0.0,
                 "signal_grade": "NO SIGNAL", "signal_score": 0.0,
-                "signal_breakdown": {"trend": 0.0, "momentum": 0.0, "volume": 0.0, "pattern": 0.0},
+                "signal_breakdown": {"entry": 0.0, "momentum": 0.0, "structure": 0.0, "volume": 0.0},
                 "entry_low": None, "entry_high": None, "signal_stop": None,
                 "extras": {
                     "short_name": fund.get("short_name", ""),
