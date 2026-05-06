@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pandas_ta as ta
 
@@ -291,6 +292,48 @@ def calc_value_spike(df: pd.DataFrame, window: int = 20, threshold: float = 2.0)
             "ratio": round(ratio, 2),
             "signal": "spike" if ratio >= threshold else "normal",
         }
+    except Exception:
+        return None
+
+
+def calc_volume_profile(df: pd.DataFrame, lookback: int = 20, n_bins: int = 50) -> dict | None:
+    """Volume Profile POC: 20일 가격 구간별 거래대금 분포 → 최고 밀집 가격 (기관 평단가).
+
+    가격 축을 n_bins개 구간으로 분할, 각 캔들의 거래대금을 캔들 범위 비례로 배분 후
+    가장 많은 거래대금이 쌓인 구간 중앙값을 POC(Point of Control)로 반환.
+    """
+    try:
+        data = df.tail(lookback)
+        if len(data) < lookback // 2:
+            return None
+
+        lo = float(data["Low"].min())
+        hi = float(data["High"].max())
+        if hi <= lo:
+            return None
+
+        bins    = np.linspace(lo, hi, n_bins + 1)
+        bin_vol = np.zeros(n_bins)
+
+        lows    = data["Low"].values
+        highs   = data["High"].values
+        closes  = data["Close"].values
+        volumes = data["Volume"].values
+
+        for k in range(len(data)):
+            c_lo = lows[k]
+            c_hi = highs[k]
+            dv   = closes[k] * volumes[k]   # 거래대금
+            rng  = c_hi - c_lo
+            if rng <= 0:
+                continue
+            overlaps = np.maximum(0.0, np.minimum(c_hi, bins[1:]) - np.maximum(c_lo, bins[:-1]))
+            bin_vol += dv * overlaps / rng
+
+        poc_idx = int(np.argmax(bin_vol))
+        poc = (bins[poc_idx] + bins[poc_idx + 1]) / 2
+
+        return {"poc": round(poc, 2), "vol_hi": round(hi, 2), "vol_lo": round(lo, 2)}
     except Exception:
         return None
 

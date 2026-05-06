@@ -14,6 +14,7 @@ from screener.indicators import (
     calc_obv_divergence,
     calc_ma_alignment,
     calc_cmf,
+    calc_volume_profile,
 )
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,18 @@ def _detect_recent_bullish(df: pd.DataFrame, lookback: int = 3) -> list[str]:
                     if zone_bot <= price_now <= zone_top * 1.02:
                         detected.append("FVG")
                         break
+
+        # Volume Profile POC: 20일 거래량 최고 밀집 가격대에 현재가 근접
+        # POC 직상방 = 기관의 평균 매입 단가가 지지선으로 작동하는 구간
+        try:
+            vp = calc_volume_profile(df)
+            if vp:
+                poc = vp["poc"]
+                price_now = float(c[-1])
+                if poc <= price_now <= poc * 1.02:
+                    detected.append("POC")
+        except Exception:
+            pass
 
         # 중복 제거 후 반환
         result = list(dict.fromkeys(detected))
@@ -194,6 +207,19 @@ def score_signals(
                     rsi_score = (rsi - 35) / 10 * 0.6       # 35 → 0.0, 45 → 0.6
                 elif 65 < rsi <= 75:
                     rsi_score = (75 - rsi) / 10 * 0.4       # 65 → 0.4, 75 → 0.0
+
+        # RSI 히스테리시스: 최근 10일 내 RSI가 30 이하를 방문했지만 35 미회복 시 억제
+        # 단순 RSI 반등(데드캣 바운스)을 진짜 회복으로 오인하는 오신호 필터
+        try:
+            rsi_series = df_daily.ta.rsi(length=14)
+            if rsi_series is not None:
+                recent_rsi = rsi_series.dropna().tail(10).tolist()
+                if len(recent_rsi) >= 3:
+                    recently_oversold = any(r < 30 for r in recent_rsi[:-1])
+                    if recently_oversold and recent_rsi[-1] < 35:
+                        rsi_score *= 0.5
+        except Exception:
+            pass
 
         # StochRSI 방향: 과매도권 탈출 중이면 보너스
         stoch_bonus = 0.0

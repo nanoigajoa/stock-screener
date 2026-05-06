@@ -1,6 +1,7 @@
 """매도 청산 신호 계산."""
 import numpy as np
 import pandas as pd
+import pandas_ta as ta  # noqa: F401 — registers df.ta accessor
 
 
 def compute_sell_signals(df: pd.DataFrame) -> list[dict]:
@@ -67,7 +68,21 @@ def compute_sell_signals(df: pd.DataFrame) -> list[dict]:
     vol_up     = np.where(avg_arr > 0, val_arr / avg_arr, 0.0) >= 1.5
     ma20_break = (c_arr < m20_arr) & (c_prev >= m20_prev) & is_bear & vol_up
 
-    sell_cond = valid & (dead_cross | rsi_exit | ma20_break)
+    # Chandelier Exit Long: 22일 최고점 - ATR(22) × 3
+    # 추세 추종형 동적 손절선 — 가격이 이 선 아래로 전환 시 상승 추세 종료
+    chandelier_cross = np.zeros(n, dtype=bool)
+    try:
+        atr22 = df.ta.atr(length=22)
+        if atr22 is not None:
+            highest22 = high.rolling(22).max()
+            ch_long   = (highest22 - 3 * atr22).values
+            ch_prev   = np.empty(n); ch_prev[0] = np.nan; ch_prev[1:] = ch_long[:-1]
+            ch_valid  = valid & ~np.isnan(ch_long) & ~np.isnan(ch_prev)
+            chandelier_cross = ch_valid & (c_arr < ch_long) & (c_prev >= ch_prev)
+    except Exception:
+        pass
+
+    sell_cond = valid & (dead_cross | rsi_exit | ma20_break) | chandelier_cross
 
     markers = []
     for i in np.where(sell_cond)[0]:
@@ -75,6 +90,8 @@ def compute_sell_signals(df: pd.DataFrame) -> list[dict]:
             reason = "데드크로스"
         elif rsi_exit[i]:
             reason = "RSI과열이탈"
+        elif chandelier_cross[i] and not ma20_break[i]:
+            reason = "샹들리에이탈"
         else:
             reason = "MA20붕괴"
         markers.append({
