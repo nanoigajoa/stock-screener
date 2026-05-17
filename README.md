@@ -27,15 +27,21 @@
 - **사이드바 라이브** — SPY · VIX · 공포탐욕지수 (15분 캐시), FRED 매크로 (7일 캐시)
 
 ### 매매시그널 `/signals`
-- **4카테고리 가중 채점** — Trend 35% / Momentum 25% / Volume 25% / Pattern 15%
+- **3축 독립 스코어링** — 진입 포지션(40%) + 모멘텀 강도(35%) + 구조 확인(25%) + 수급 보너스(+5%)
+  - **진입 포지션**: ATR 진입존(MA60~MA20+0.5ATR) 위치 + BB %B 과매도 위치
+  - **모멘텀 강도**: RSI 종형 곡선(45~65 최고점) + ADX 추세 강도
+  - **구조 확인**: LiquiditySweep / FVG / POC 기관 신호 + 캔들 패턴
+  - **수급 보너스**: CMF + OBV 이중 확인 시 가산 (최대 +0.05)
 - **STRONG BUY / BUY / WATCH / NO SIGNAL** 4등급, 진입가 밴드 + 손절가 표시
+- **SPY MA50 국면 필터** — 하락장(SPY < MA50) 시 STRONG BUY·BUY → WATCH 자동 캡핑
+- **Confluence Check** — 구조 지지·모멘텀 회복·자금 유입 3개 독립 레이어 동시 충족 여부 표시
 - **관심종목 관리** — Watchlist 추가/삭제, 서버 영구 저장 (`data/watchlist.json`)
-- **SSE 실시간 스트리밍** — 분석 진행 상황 즉시 반영, 120초 타임아웃
+- **SSE 실시간 스트리밍** — 분석 진행 상황 즉시 반영
 
 ### 캔들 차트 모달
 - **Lightweight Charts 4.2** — OHLCV 캔들스틱 + MA20
-- **매수 마커 5종** — MA5골든 / RSI+볼륨 / RSI반등 / MACD전환 / 볼륨급증
-- **매도 마커 3종** — 데드크로스 / RSI과열이탈 / MA20붕괴
+- **매수 마커 5종** — MA5골든 / FVG반등 / RSI+볼륨 / RSI반등 / MACD전환
+- **매도 마커 4종** — 데드크로스 / RSI과열이탈 / MA20붕괴 / 샹들리에이탈(Chandelier Exit)
 
 ---
 
@@ -71,7 +77,7 @@ REFRESH_TOKEN=your_secret_token         # 임의 생성 예시:
 uvicorn api.main:app --reload --port 8000
 ```
 
-`http://localhost:8000` 접속 → `/signals` 자동 리다이렉트.
+`http://localhost:8000` 접속 → `/about` 자동 리다이렉트.
 
 ---
 
@@ -169,14 +175,16 @@ fin_auto/
 
 체크리스트 항목 비활성화 시 분모(max) 자동 조정.
 
-### 매매시그널 (가중 합산)
+### 매매시그널 (3축 가중 합산)
 
 | 등급 | 조건 |
 |------|------|
-| STRONG BUY | 가중합 ≥ 0.60 |
-| BUY | 가중합 ≥ 0.40 |
+| STRONG BUY | 가중합 ≥ 0.60 + MA 정배열(MA20 > MA60) |
+| BUY | 가중합 ≥ 0.40 (또는 MA 역배열 시 0.60 이상도 BUY로 캡핑) |
 | WATCH | 가중합 ≥ 0.20 |
-| NO SIGNAL | 가중합 < 0.20 또는 활성 카테고리 < 2개 |
+| NO SIGNAL | 진입 포지션 또는 모멘텀이 0 / 가중합 < 0.20 |
+
+SPY MA50 하락장 판정 시 STRONG BUY·BUY → WATCH 자동 캡핑.
 
 ---
 

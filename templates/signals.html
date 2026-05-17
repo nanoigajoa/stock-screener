@@ -5,7 +5,7 @@
 
 {% block content %}
 <h1 class="page-title">매매 시그널</h1>
-<p class="page-subtitle">실시간 매수신호 랭킹 보드 · <span id="signal-count">...</span>개 분석 완료 · 30초 전 갱신</p>
+<p class="page-subtitle">실시간 매수신호 랭킹 보드 · <span id="signal-count">...</span>개 분석 완료 · <span id="signal-updated">—</span></p>
 
 <!-- Watchlist Panel -->
 <div class="watchlist-panel">
@@ -17,6 +17,9 @@
       <button class="wl-remove" data-ticker="{{ ticker }}" aria-label="삭제">×</button>
     </span>
     {% endfor %}
+    {% if not watchlist %}
+    <span class="wl-empty-hint">종목 없음 — Finviz 전체 유니버스 상위 50개로 자동 분석합니다</span>
+    {% endif %}
   </div>
   <div class="watchlist-add">
     <input type="text" id="wl-input" placeholder="ADD TICKER" autocomplete="off" spellcheck="false">
@@ -31,6 +34,7 @@
   <button class="pill tone-bull" data-filter="STRONG BUY">⚡ STRONG BUY</button>
   <button class="pill tone-bull" data-filter="BUY">▲ BUY</button>
   <button class="pill tone-watch" data-filter="WATCH">◎ WATCH</button>
+  <button class="pill tone-mute" data-filter="NO SIGNAL">– NO SIGNAL</button>
   <span class="meta">SORTED BY SCORE · DESC</span>
 </div>
 
@@ -66,4 +70,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}<script src="/static/js/signals.js?v=9"></script>{% endblock %}
+{% block extra_js %}<script src="/static/js/signals.js?v=10"></script>{% endblock %}

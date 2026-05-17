@@ -371,6 +371,7 @@ a { color: inherit; text-decoration: none; }
 .pill.is-active.tone-bull  { background: var(--bull-soft);  border-color: var(--bull);  color: var(--bull); }
 .pill.is-active.tone-bear  { background: var(--bear-soft);  border-color: var(--bear);  color: var(--bear); }
 .pill.is-active.tone-watch { background: var(--watch-soft); border-color: var(--watch); color: var(--watch); }
+.pill.is-active.tone-mute  { background: var(--surface-alt); border-color: var(--border-strong); color: var(--text-faint); }
 
 /* ── Watchlist Panel ────────────────────────────────────── */
 .watchlist-panel {
@@ -407,6 +408,12 @@ a { color: inherit; text-decoration: none; }
   transition: var(--t);
 }
 .wl-tag:hover { border-color: var(--border-strong); }
+.wl-empty-hint {
+  font-size: 11px;
+  color: var(--text-faint);
+  align-self: center;
+  font-style: italic;
+}
 .wl-remove {
   display: inline-flex;
   align-items: center; justify-content: center;

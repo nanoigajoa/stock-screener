@@ -6,22 +6,22 @@
 {% block content %}
 <div class="macro-banner">
   <div class="macro-main">
-    {% if macro %}
-    <span class="pair"><span class="lbl">FED</span><strong>{{ macro.fed_funds }}%</strong></span>
-    <span class="pair"><span class="lbl">CPI</span><strong>{{ macro.cpi_yoy }}%</strong></span>
-    <span class="pair"><span class="lbl">UNRATE</span><strong>{{ macro.unrate }}%</strong></span>
-    <span class="pair"><span class="lbl">10Y-2Y</span><strong>{{ "+" if macro.t10y2y >= 0 }}{{ macro.t10y2y }}%</strong></span>
-    <span class="pair"><span class="lbl">VIX</span><strong>{{ macro.vix if macro.vix else "N/A" }}</strong></span>
-    {% if macro.regime %}
-    <span class="macro-regime">{{ macro.regime }}</span>
+    {% if fred_macro %}
+    <span class="pair"><span class="lbl">FED</span><strong>{{ fred_macro.fed_funds }}%</strong></span>
+    <span class="pair"><span class="lbl">CPI</span><strong>{{ fred_macro.cpi_yoy }}%</strong></span>
+    <span class="pair"><span class="lbl">UNRATE</span><strong>{{ fred_macro.unrate }}%</strong></span>
+    <span class="pair"><span class="lbl">10Y-2Y</span><strong>{{ "+" if fred_macro.t10y2y and fred_macro.t10y2y >= 0 }}{{ fred_macro.t10y2y }}%</strong></span>
+    <span class="pair"><span class="lbl">VIX</span><strong>{{ fred_macro.vix if fred_macro.vix else "N/A" }}</strong></span>
+    {% if fred_macro.regime %}
+    <span class="macro-regime">{{ fred_macro.regime }}</span>
     {% endif %}
     {% else %}
-    <span style="color:var(--text-faint)">MACD DATA LOADING...</span>
+    <span style="color:var(--text-faint)">MACRO DATA LOADING...</span>
     {% endif %}
   </div>
   <div class="macro-meta">
-    {% if macro and macro.fetched_at %}
-    FRED · {{ macro.fetched_at | ago }}
+    {% if fred_macro and fred_macro.fetched_at %}
+    FRED · {{ fred_macro.fetched_at | ago }}
     {% endif %}
   </div>
 </div>
@@ -142,4 +142,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}<script src="/static/js/screen.js?v=7"></script>{% endblock %}
+{% block extra_js %}<script src="/static/js/screen.js?v=8"></script>{% endblock %}

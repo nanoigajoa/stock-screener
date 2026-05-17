@@ -352,6 +352,13 @@
 }
 .watchlist-btn:hover { color: var(--watch); border-color: var(--watch); background: var(--watch-soft); }
 .watchlist-btn.wl-added { color: var(--watch); border-color: var(--watch); background: var(--watch-soft); }
+.watchlist-btn.wl-added svg path { fill: currentColor; }
+@keyframes wl-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.watchlist-btn.wl-pop { animation: wl-pop 0.25s ease-out; }
 
 .stock-card .chart-btn {
   background: transparent;
@@ -430,6 +437,96 @@
 }
 #modal-close:hover { border-color: var(--bear); color: var(--bear); background: var(--bear-soft); }
 #lw-chart-container { width: 100%; height: 420px; background: var(--bg); }
+
+/* ── Modal detail (card-detail 콘텐츠) ──────────────────── */
+#modal-detail {
+  border-top: 1px solid var(--border);
+  padding: 20px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms-score {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bull);
+  background: var(--bull-soft);
+  border: 1px solid rgba(0,212,170,0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px;
+}
+.grid-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  color: var(--text-muted);
+}
+.grid-item.pass { border-left-color: var(--bull); color: var(--text); }
+.grid-item.fail { border-left-color: var(--bear); opacity: 0.7; }
+.grid-item .icon { font-size: 13px; flex-shrink: 0; }
+
+/* 펀더멘털 배지 */
+.fundamentals-details { border-top: 1px solid var(--border); padding-top: 12px; }
+.fundamentals-toggle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.fundamentals-toggle:hover { color: var(--text); }
+.fundamentals-details .indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* badge — sig 계열 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.badge-label { color: inherit; opacity: 0.7; }
+.badge-val   { font-family: var(--font-mono); }
+
+.sig-ok   { background: rgba(52,211,153,0.12);  color: var(--bull);  border-color: rgba(52,211,153,0.2); }
+.sig-bad  { background: rgba(244,63,94,0.12);   color: var(--bear);  border-color: rgba(244,63,94,0.2); }
+.sig-warn { background: rgba(246,201,14,0.12);  color: var(--watch); border-color: rgba(246,201,14,0.2); }
+.sig-dim  { background: var(--surface-alt);     color: var(--text-faint); border-color: var(--border); }
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 1280px) {

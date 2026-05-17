@@ -290,6 +290,35 @@ def score_signals(
         else:
             grade = "NO SIGNAL"
 
+        # ── Confluence Check ──────────────────────────────────
+        # 3개 독립 정보 계층(가격구조·가격속도·자금방향)이 동시에 충족 → 고신뢰도
+        rsi_val_cf = stoch.get("rsi") if stoch else None
+        struct_pat = next((p for p in patterns if p in ("FVG", "POC", "LiquiditySweep")), None)
+
+        structure_ok = struct_pat is not None
+        momentum_ok  = rsi_val_cf is not None and 35 <= rsi_val_cf <= 60
+        flow_ok      = cmf_val > 0
+
+        confluence_layers = (
+            (["structure"] if structure_ok else []) +
+            (["momentum"]  if momentum_ok  else []) +
+            (["flow"]      if flow_ok      else [])
+        )
+        confluence_detail = {
+            "structure": {
+                "ok":     structure_ok,
+                "reason": struct_pat if struct_pat else "구조 신호 없음",
+            },
+            "momentum": {
+                "ok":     momentum_ok,
+                "reason": f"RSI {rsi_val_cf:.0f}" if rsi_val_cf is not None else "RSI 없음",
+            },
+            "flow": {
+                "ok":     flow_ok,
+                "reason": f"CMF {cmf_val:+.2f}" if cmf_data else "CMF 없음",
+            },
+        }
+
         return {
             "signal_grade":    grade,
             "signal_score":    round(total, 3),
@@ -303,6 +332,9 @@ def score_signals(
             "entry_low":   atr["entry_low"]   if atr else None,
             "entry_high":  atr["entry_high"]  if atr else None,
             "signal_stop": atr["signal_stop"] if atr else None,
+            "confluence_count":  len(confluence_layers),
+            "confluence_layers": confluence_layers,
+            "confluence_detail": confluence_detail,
         }
 
     except Exception as e:
@@ -317,4 +349,7 @@ def score_signals(
             "entry_low":   None,
             "entry_high":  None,
             "signal_stop": None,
+            "confluence_count":  0,
+            "confluence_layers": [],
+            "confluence_detail": {},
         }

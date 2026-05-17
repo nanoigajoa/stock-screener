@@ -252,6 +252,7 @@
 }
 .sig-zone .lbl { color: var(--text-faint); margin-right: 4px; letter-spacing: 0.04em; }
 .sig-zone .val { color: var(--bull); }
+.sig-zone.sig-stop .val { color: var(--bear); }
 
 /* ── Action ─────────────────────────────────────────────── */
 .sc-footer {
@@ -505,4 +506,87 @@
   font-size: 0.82rem;
   padding: 8px 14px;
   margin-bottom: 12px;
+}
+
+/* ── Confluence Check (Card) ─────────────────────────── */
+.confluence-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+.cf-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.cf-dot.inactive         { background: var(--border-strong); }
+.cf-dot.active.structure { background: #60a5fa; }
+.cf-dot.active.momentum  { background: #fbbf24; }
+.cf-dot.active.flow      { background: #34d399; }
+.confluent-3 .cf-dot     { width: 8px; height: 8px; }
+.cf-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #34d399;
+  text-shadow: 0 0 8px rgba(52,211,153,0.45);
+  margin-left: 3px;
+}
+
+/* ── Confluence Check (Modal) ────────────────────────── */
+.msd-confluence {
+  margin-top: 14px;
+  border: 1px solid rgba(52,211,153,0.18);
+  border-radius: 8px;
+  padding: 11px 14px;
+  background: rgba(52,211,153,0.04);
+}
+.cf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cf-header-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.cf-header-score {
+  font-size: 14px;
+  font-weight: 700;
+  color: #34d399;
+}
+.cf-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cf-detail-row {
+  display: grid;
+  grid-template-columns: 14px 80px 16px 1fr;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.cf-row-icon  { color: var(--text-faint); }
+.cf-row-label { color: var(--text-muted); }
+.cf-row-check { font-weight: 700; text-align: center; }
+.cf-row-ok   .cf-row-check { color: #34d399; }
+.cf-row-fail .cf-row-check { color: #f43f5e; }
+.cf-row-reason {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.cf-maxed-note {
+  margin-top: 10px;
+  font-size: 10px;
+  color: #34d399;
+  opacity: 0.82;
+  text-align: center;
 }

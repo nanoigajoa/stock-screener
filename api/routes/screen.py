@@ -14,12 +14,13 @@ _executor = ThreadPoolExecutor(max_workers=4)
 
 @router.get("/screen", response_class=HTMLResponse)
 def screen_page(request: Request):
-    from screener.macro_fetcher import get_sidebar_macro
+    from screener.macro_fetcher import get_sidebar_macro, get_macro_context
     macro = get_sidebar_macro()
+    fred_macro = get_macro_context()
     return templates.TemplateResponse(
         request=request,
         name="screen.html",
-        context={"active_page": "screen", "macro": macro},
+        context={"active_page": "screen", "macro": macro, "fred_macro": fred_macro},
     )
 
 

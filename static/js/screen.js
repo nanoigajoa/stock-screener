@@ -137,6 +137,9 @@ document.addEventListener('click', async function (e) {
     _watchlistSet.add(ticker);
     btn.classList.add('wl-added');
     btn.title = '관심종목에 추가됨';
+    btn.classList.remove('wl-pop');
+    void btn.offsetWidth; // reflow로 애니메이션 재트리거
+    btn.classList.add('wl-pop');
   } catch {}
 });
 

@@ -103,6 +103,7 @@ def run_signal_analysis(tickers: list[str] | None = None) -> dict:
                 "signal_grade": "NO SIGNAL", "signal_score": 0.0,
                 "signal_breakdown": {"entry": 0.0, "momentum": 0.0, "structure": 0.0, "volume": 0.0},
                 "entry_low": None, "entry_high": None, "signal_stop": None,
+                "confluence_count": 0, "confluence_layers": [], "confluence_detail": {},
                 "extras": {
                     "short_name": fund.get("short_name", ""),
                     "website_domain": domain

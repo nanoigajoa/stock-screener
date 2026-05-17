@@ -27,13 +27,17 @@
 {% set grade      = r.signal_grade or "NO SIGNAL" %}
 {% set score      = r.signal_score or 0.0 %}
 {% set breakdown  = r.signal_breakdown or {} %}
-{% set entry_low  = r.entry_low %}
-{% set entry_high = r.entry_high %}
+{% set entry_low   = r.entry_low %}
+{% set entry_high  = r.entry_high %}
+{% set signal_stop = r.signal_stop %}
 {% set extras     = r.extras or {} %}
 {% set short_name = extras.short_name or "" %}
-{% set patterns   = r.detected_patterns or [] %}
-{% set grade_icon = _grade_icon.get(grade, "–") %}
-{% set grade_cls  = _grade_cls.get(grade, "sig-nosignal") %}
+{% set patterns        = r.detected_patterns or [] %}
+{% set cf_count        = r.confluence_count or 0 %}
+{% set cf_layers       = r.confluence_layers or [] %}
+{% set cf_detail       = r.confluence_detail or {} %}
+{% set grade_icon      = _grade_icon.get(grade, "–") %}
+{% set grade_cls       = _grade_cls.get(grade, "sig-nosignal") %}
 
 {# ── 진입존 문자열 ── #}
 {% if entry_low and entry_high %}
@@ -44,15 +48,18 @@
 
 {# ── 모달용 info JSON ── #}
 {% set _info = {
-  "price":      price,
-  "change":     change,
-  "short_name": short_name,
-  "grade":      grade,
-  "score":      score,
-  "breakdown":  breakdown,
-  "entry_low":  entry_low,
-  "entry_high": entry_high,
-  "patterns":   patterns
+  "price":             price,
+  "change":            change,
+  "short_name":        short_name,
+  "grade":             grade,
+  "score":             score,
+  "breakdown":         breakdown,
+  "entry_low":         entry_low,
+  "entry_high":        entry_high,
+  "patterns":          patterns,
+  "confluence_count":  cf_count,
+  "confluence_layers": cf_layers,
+  "confluence_detail": cf_detail
 } %}
 
 <div class="signal-card {{ grade_cls }}"
@@ -76,6 +83,19 @@
     </div>
     <div class="sc-score">SCORE <b>{{ "%.0f" % (score * 100) }}</b>/100</div>
   </div>
+
+  {# ── Confluence Dots ── #}
+  {% if cf_count > 0 %}
+  {%- set _title = {"structure": "기관 지지구간 (FVG/POC)", "momentum": "모멘텀 회복 (RSI 35~60)", "flow": "자금 유입 (CMF+)"} %}
+  <div class="confluence-row confluent-{{ cf_count }}">
+    {% for layer in ["structure", "momentum", "flow"] %}
+    {%- set is_active = layer in cf_layers %}
+    <span class="cf-dot {{ ('active ' ~ layer) if is_active else 'inactive' }}"
+          title="{{ _title[layer] if is_active else '' }}">{{ "●" if is_active else "○" }}</span>
+    {% endfor %}
+    {% if cf_count == 3 %}<span class="cf-label">CONFLUENCE</span>{% endif %}
+  </div>
+  {% endif %}
 
   {# ── 카테고리 점수 바 ── #}
   <div class="sc-cats">
@@ -111,6 +131,11 @@
     <div class="sig-zone">
       <span class="lbl">ENTRY</span><span class="val">{{ zone_str }}</span>
     </div>
+    {% if signal_stop %}
+    <div class="sig-zone sig-stop">
+      <span class="lbl">STOP</span><span class="val">${{ "%.2f" % signal_stop }}</span>
+    </div>
+    {% endif %}
   </div>
 
   {# ── 액션 버튼 ── #}

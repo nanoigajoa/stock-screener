@@ -25,6 +25,14 @@ function _startStream(tickers) {
     area.innerHTML = data.html;
     _syncWatchlistTags(data.watchlist || []);
     _applyFilter(_currentFilter);
+    // subtitle 갱신 시각 업데이트
+    const updEl = document.getElementById('signal-updated');
+    if (updEl) {
+      const now = new Date();
+      const hh  = String(now.getHours()).padStart(2, '0');
+      const mm  = String(now.getMinutes()).padStart(2, '0');
+      updEl.textContent = `${hh}:${mm} 기준`;
+    }
   });
 
   _evtSource.addEventListener('error', function (e) {
@@ -87,6 +95,12 @@ function _syncWatchlistTags(tickers) {
   const tags = document.getElementById('watchlist-tags');
   tags.innerHTML = '';
   tickers.forEach(t => _addTag(t));
+  if (!tickers.length) {
+    const hint = document.createElement('span');
+    hint.className = 'wl-empty-hint';
+    hint.textContent = '종목 없음 — Finviz 전체 유니버스 상위 50개로 자동 분석합니다';
+    tags.appendChild(hint);
+  }
 }
 
 // 태그 삭제 클릭 (이벤트 위임)
@@ -203,6 +217,40 @@ function _renderSignalDetail(info) {
     ? info.patterns.map(p => `<span class="msd-pattern">${p}</span>`).join('')
     : '<span class="msd-no-pattern">감지된 패턴 없음</span>';
 
+  // Confluence panel
+  const CF_META = {
+    structure: { icon: '◆', label: '구조 지지' },
+    momentum:  { icon: '▲', label: '모멘텀 회복' },
+    flow:      { icon: '→', label: '자금 유입' },
+  };
+  const cfCount  = info.confluence_count  || 0;
+  const cfDetail = info.confluence_detail || {};
+  let cfSection  = '';
+  if (cfCount > 0) {
+    const cfRows = Object.entries(CF_META).map(([key, meta]) => {
+      const d   = cfDetail[key] || {};
+      const ok  = d.ok || false;
+      return `<div class="cf-detail-row ${ok ? 'cf-row-ok' : 'cf-row-fail'}">` +
+        `<span class="cf-row-icon">${meta.icon}</span>` +
+        `<span class="cf-row-label">${meta.label}</span>` +
+        `<span class="cf-row-check">${ok ? '✓' : '✗'}</span>` +
+        `<span class="cf-row-reason">${d.reason || ''}</span>` +
+        `</div>`;
+    }).join('');
+    const maxNote = cfCount === 3
+      ? `<p class="cf-maxed-note">3가지 독립 신호 동시 충족 — 최고 신뢰도 진입입니다.</p>`
+      : '';
+    cfSection =
+      `<div class="msd-confluence">` +
+      `  <div class="cf-header">` +
+      `    <span class="cf-header-title">CONFLUENCE</span>` +
+      `    <span class="cf-header-score">${cfCount} / 3</span>` +
+      `  </div>` +
+      `  <div class="cf-detail-rows">${cfRows}</div>` +
+      maxNote +
+      `</div>`;
+  }
+
   detail.innerHTML =
     `<div class="modal-signal-section">` +
     `  <div class="msd-header">` +
@@ -212,6 +260,7 @@ function _renderSignalDetail(info) {
     `  </div>` +
     `  <div class="msd-cats">${cats}</div>` +
     `  <div class="msd-patterns-row">${patterns}</div>` +
+    cfSection +
     `</div>`;
 }
 

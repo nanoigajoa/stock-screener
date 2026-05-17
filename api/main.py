@@ -9,7 +9,6 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from api.routes.explore import router as explore_router
 from api.routes.screen import router as screen_router
 from api.routes.tickers import router as tickers_router
 from api.routes.chart import router as chart_router
@@ -37,7 +36,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="StockScope", version="3.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.include_router(explore_router)
 app.include_router(screen_router)
 app.include_router(tickers_router)
 app.include_router(chart_router)
@@ -48,7 +46,7 @@ app.include_router(signals_router)
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    return RedirectResponse(url="/signals")
+    return RedirectResponse(url="/about")
 
 @app.get("/about", response_class=HTMLResponse)
 def about(request: Request):
